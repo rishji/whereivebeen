@@ -17,6 +17,8 @@ npm install
 npm run dev
 npm test
 npm run build
+npm run ingest:history -- /Users/rishi/Downloads/location-history.json
+npm run summarize:history
 ```
 
 ## Data Model
@@ -38,3 +40,7 @@ Map state is stored as:
 
 Google Takeout Location History should be processed locally into derived JSON artifacts before
 being loaded by the web app. Raw location history should not be committed or published.
+
+The ingestion script currently writes exact extracted points to `data/private/`, which is ignored by
+Git. The summarization script derives country, US state, and India state visit summaries from that
+private intermediate file. City/metropolitan-area support still needs a reliable population dataset.

@@ -73,6 +73,17 @@ h1 {
   margin: 0;
 }
 
+h2 {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  letter-spacing: -0.06em;
+  line-height: 1;
+  margin: 0;
+}
+
+h3 {
+  margin: 0;
+}
+
 .lede {
   color: #334155;
   font-size: 1.05rem;
@@ -82,7 +93,11 @@ h1 {
 
 .stats-card,
 .toolbar,
-.map-shell {
+.map-shell,
+.history-summary-card,
+.place-group,
+.place-details,
+.empty-state {
   border: 1px solid rgba(148, 163, 184, 0.55);
   border-radius: 1.5rem;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
@@ -119,6 +134,15 @@ h1 {
   gap: 1rem;
   justify-content: space-between;
   padding: 1rem;
+}
+
+.page-tabs {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.page-tabs .active {
+  background: #0f172a;
 }
 
 .legend,
@@ -195,6 +219,106 @@ h1 {
   margin: 0;
 }
 
+.history-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.history-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.history-summary-card,
+.place-group,
+.place-details,
+.empty-state {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+}
+
+.history-summary-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-summary-card p,
+.place-details p,
+.empty-state p {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.place-group h3 {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.place-group h3 span {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.place-list,
+.span-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.place-row,
+.span-row {
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 0.9rem;
+  color: #0f172a;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+}
+
+.place-row {
+  border: 1px solid transparent;
+  width: 100%;
+}
+
+.place-row:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.place-details {
+  grid-column: span 2;
+}
+
+.span-row strong,
+.place-row strong {
+  color: #475569;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.empty-state code {
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  display: inline-block;
+  padding: 0.35rem 0.5rem;
+}
+
 .visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
@@ -216,5 +340,17 @@ h1 {
 
   .stats-card {
     align-items: flex-start;
+  }
+
+  .history-header {
+    flex-direction: column;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .place-details {
+    grid-column: span 1;
   }
 }

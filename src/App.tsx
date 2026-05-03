@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { EditableMap } from "./components/EditableMap";
+import { HistoryExplorer } from "./components/HistoryExplorer";
 import { Legend } from "./components/Legend";
 import {
   cyclePlaceStatus,
@@ -11,6 +12,7 @@ import {
 } from "./lib/placeState";
 
 export function App() {
+  const [activePage, setActivePage] = useState<"map" | "history">("map");
   const [statuses, setStatuses] = useState<PlaceStatuses>(() => loadPlaceStatuses());
   const [message, setMessage] = useState<string>("Click a place to cycle through statuses.");
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -87,33 +89,56 @@ export function App() {
         </div>
       </section>
 
-      <section className="toolbar" aria-label="Map controls">
-        <Legend />
-        <div className="actions">
-          <button type="button" onClick={exportJson}>
-            Export JSON
-          </button>
-          <button type="button" onClick={() => importInputRef.current?.click()}>
-            Import JSON
-          </button>
-          <button type="button" className="secondary" onClick={resetMap}>
-            Reset
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json"
-            className="visually-hidden"
-            onChange={(event) => void importJson(event.target.files?.[0])}
-          />
-        </div>
-      </section>
+      <nav className="page-tabs" aria-label="Where I've Been sections">
+        <button
+          type="button"
+          className={activePage === "map" ? "active" : "secondary"}
+          onClick={() => setActivePage("map")}
+        >
+          Editable Map
+        </button>
+        <button
+          type="button"
+          className={activePage === "history" ? "active" : "secondary"}
+          onClick={() => setActivePage("history")}
+        >
+          History
+        </button>
+      </nav>
 
-      <EditableMap statuses={statuses} onTogglePlace={togglePlace} />
+      {activePage === "map" ? (
+        <>
+          <section className="toolbar" aria-label="Map controls">
+            <Legend />
+            <div className="actions">
+              <button type="button" onClick={exportJson}>
+                Export JSON
+              </button>
+              <button type="button" onClick={() => importInputRef.current?.click()}>
+                Import JSON
+              </button>
+              <button type="button" className="secondary" onClick={resetMap}>
+                Reset
+              </button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json"
+                className="visually-hidden"
+                onChange={(event) => void importJson(event.target.files?.[0])}
+              />
+            </div>
+          </section>
 
-      <p className="status-message" role="status">
-        {message}
-      </p>
+          <EditableMap statuses={statuses} onTogglePlace={togglePlace} />
+
+          <p className="status-message" role="status">
+            {message}
+          </p>
+        </>
+      ) : (
+        <HistoryExplorer />
+      )}
     </main>
   );
 }
