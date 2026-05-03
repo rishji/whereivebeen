@@ -82,6 +82,7 @@ export function App() {
             Mark countries, US states, and India states directly on the map. Click any place to cycle
             through visited, lived there, want to visit, and blank.
           </p>
+          <p className="subtle-note">Edits are saved in this browser and survive refreshes and deploys.</p>
         </div>
         <div className="stats-card">
           <span className="stats-value">{markedPlacesCount}</span>

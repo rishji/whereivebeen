@@ -138,12 +138,25 @@ export function HistoryExplorer({ initialSummary = null }: HistoryExplorerProps)
         </div>
       </div>
 
+      <div className="instruction-card">
+        <h3>How to export your history</h3>
+        <ol>
+          <li>
+            Open <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">Google Takeout</a>
+          </li>
+          <li>Select only <strong>Location History</strong> or <strong>Timeline</strong></li>
+          <li>Export as JSON and download the file named <code>location-history.json</code></li>
+          <li>Import that file here; the browser stores only the derived summary</li>
+        </ol>
+      </div>
+
       {summary ? (
         <div className="history-grid">
           <div className="history-summary-card">
             <span className="stats-value">{summary.places.length + (summary.cities?.length ?? 0)}</span>
             <span className="stats-label">places summarized</span>
             <p>{summary.sourcePointCount.toLocaleString()} private points processed locally.</p>
+            <p>Map edits are stored in this browser and survive refreshes and deploys on this site.</p>
           </div>
           <PlaceGroup title="Countries" places={groupedPlaces.countries} onSelect={selectPlace} />
           <PlaceGroup title="US States" places={groupedPlaces.usStates} onSelect={selectPlace} />
@@ -263,15 +276,18 @@ function DetailsPanel({
         {city ? ` Population ${city.population.toLocaleString()}.` : ""}
       </p>
       <div className="span-list">
-        {item.dateSpans.slice(0, 40).map((span) => (
-          <div className="span-row" key={`${item.key}-${span.startDate}-${span.endDate}`}>
-            <span>
-              {span.startDate}
-              {span.endDate !== span.startDate ? ` → ${span.endDate}` : ""}
-            </span>
-            <strong>{span.dayCount} days</strong>
-          </div>
-        ))}
+        {[...item.dateSpans]
+          .sort((left, right) => right.startDate.localeCompare(left.startDate))
+          .slice(0, 80)
+          .map((span) => (
+            <div className="span-row" key={`${item.key}-${span.startDate}-${span.endDate}`}>
+              <span>
+                {span.startDate}
+                {span.endDate !== span.startDate ? ` → ${span.endDate}` : ""}
+              </span>
+              <strong>{span.dayCount} days</strong>
+            </div>
+          ))}
       </div>
     </section>
   );

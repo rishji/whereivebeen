@@ -91,6 +91,13 @@ h3 {
   max-width: 760px;
 }
 
+.subtle-note {
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0;
+}
+
 .stats-card,
 .toolbar,
 .map-shell,
@@ -275,7 +282,7 @@ h3 {
   flex-direction: column;
   gap: 0.45rem;
   margin-top: 0.8rem;
-  max-height: 420px;
+  max-height: 620px;
   overflow: auto;
 }
 
@@ -317,6 +324,29 @@ h3 {
   border-radius: 0.5rem;
   display: inline-block;
   padding: 0.35rem 0.5rem;
+}
+
+.instruction-card {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  padding: 1rem 1.1rem;
+}
+
+.instruction-card h3 {
+  margin-bottom: 0.5rem;
+}
+
+.instruction-card ol {
+  color: #334155;
+  line-height: 1.55;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.instruction-card li + li {
+  margin-top: 0.2rem;
 }
 
 .visually-hidden {

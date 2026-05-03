@@ -3,9 +3,11 @@ import {
   cyclePlaceStatus,
   exportPlaceStatuses,
   importPlaceStatuses,
+  loadPlaceStatuses,
   normalizePlaceKey,
   placeStatusColors,
   placeStatusLabels,
+  savePlaceStatuses,
   type PlaceStatuses
 } from "./placeState";
 
@@ -71,4 +73,30 @@ describe("place state model", () => {
       wantToVisit: "#16a34a"
     });
   });
+
+  it("round-trips place statuses through storage", () => {
+    const storage = createStorage();
+    const statuses: PlaceStatuses = {
+      "country:356": "visited",
+      "us-state:CA": "lived"
+    };
+
+    savePlaceStatuses(statuses, storage);
+    expect(loadPlaceStatuses(storage)).toEqual(statuses);
+  });
 });
+
+function createStorage(): Storage {
+  const values = new Map<string, string>();
+
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(key) ?? null,
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key: string) => values.delete(key),
+    setItem: (key: string, value: string) => values.set(key, value)
+  };
+}
