@@ -38,9 +38,9 @@ Map state is stored as:
 
 ## Phase 2 Direction
 
-Google Takeout Location History should be processed locally into derived JSON artifacts before
-being loaded by the web app. Raw location history should not be committed or published.
+Google Takeout Location History can be imported directly in the History tab. The browser derives a
+place summary and stores only that summary in localStorage. Raw location history should not be
+committed or published.
 
-The ingestion script currently writes exact extracted points to `data/private/`, which is ignored by
-Git. The summarization script derives country, US state, and India state visit summaries from that
-private intermediate file. City/metropolitan-area support still needs a reliable population dataset.
+The CLI scripts are optional debugging tools. They write exact extracted points and derived summaries
+to `data/private/`, which is ignored by Git.

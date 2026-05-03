@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { mapSources } from "../src/lib/mapSources";
 import { toPlaceMapFeatures, type PlaceMapFeature } from "../src/lib/mapData";
 import { summarizeVisitedPlaces } from "../src/lib/historySummarizer";
+import { parseNaturalEarthCities } from "../src/lib/cityData";
+import { summarizeVisitedCities } from "../src/lib/citySummarizer";
 import type { LocationHistoryPlaceSummary } from "../src/lib/historySummaryTypes";
 import type { PrivateLocationHistoryExport } from "../src/lib/locationHistoryTypes";
 import type { PlaceScope } from "../src/lib/placeState";
@@ -12,13 +14,15 @@ const outputPath = resolve(process.argv[3] ?? "data/private/location-history-sum
 
 async function main() {
   const privateExport = JSON.parse(await readFile(inputPath, "utf8")) as PrivateLocationHistoryExport;
-  const features = await loadPlaceFeatures();
+  const [features, cities] = await Promise.all([loadPlaceFeatures(), loadMajorCities()]);
   const places = summarizeVisitedPlaces(privateExport.points, features);
+  const citySummaries = summarizeVisitedCities(privateExport.points, cities);
   const summary: LocationHistoryPlaceSummary = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     sourcePointCount: privateExport.points.length,
-    places
+    places,
+    cities: citySummaries
   };
 
   await mkdir(dirname(outputPath), { recursive: true });
@@ -32,7 +36,8 @@ async function main() {
         placeCount: summary.places.length,
         countries: summary.places.filter((place) => place.scope === "country").length,
         usStates: summary.places.filter((place) => place.scope === "us-state").length,
-        indiaStates: summary.places.filter((place) => place.scope === "india-state").length
+        indiaStates: summary.places.filter((place) => place.scope === "india-state").length,
+        cities: summary.cities?.length ?? 0
       },
       null,
       2
@@ -60,6 +65,16 @@ async function loadPlaceFeatures(): Promise<PlaceMapFeature[]> {
   );
 
   return results.flat();
+}
+
+async function loadMajorCities() {
+  const response = await fetch(mapSources.populatedPlaces);
+
+  if (!response.ok) {
+    throw new Error("Could not load major city data");
+  }
+
+  return parseNaturalEarthCities(await response.json());
 }
 
 main().catch((error: unknown) => {

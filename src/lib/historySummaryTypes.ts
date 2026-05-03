@@ -1,4 +1,5 @@
 import type { PlaceScope } from "./placeState";
+import type { CityVisitSummary } from "./cityTypes";
 
 export type DateSpan = {
   startDate: string;
@@ -22,4 +23,5 @@ export type LocationHistoryPlaceSummary = {
   generatedAt: string;
   sourcePointCount: number;
   places: VisitedPlaceSummary[];
+  cities?: CityVisitSummary[];
 };
