@@ -12,6 +12,7 @@ import {
 type EditableMapProps = {
   statuses: PlaceStatuses;
   onTogglePlace: (placeKey: string) => void;
+  readOnly?: boolean;
 };
 
 const defaultFill = "#eadfc8";
@@ -20,7 +21,7 @@ const strokeColor = "#64748b";
 const mapWidth = 1200;
 const mapHeight = 650;
 
-export function EditableMap({ statuses, onTogglePlace }: EditableMapProps) {
+export function EditableMap({ statuses, onTogglePlace, readOnly = false }: EditableMapProps) {
   const [features, setFeatures] = useState<PlaceMapFeature[]>([]);
   const [error, setError] = useState<string | null>(null);
   const projection = useMemo(
@@ -62,7 +63,7 @@ export function EditableMap({ statuses, onTogglePlace }: EditableMapProps) {
   }
 
   return (
-    <div className="map-shell">
+    <div className={readOnly ? "map-shell read-only-map" : "map-shell"}>
       <svg
         className="map"
         role="img"
@@ -84,14 +85,22 @@ export function EditableMap({ statuses, onTogglePlace }: EditableMapProps) {
               key={mapFeature.key}
               d={pathData}
               className="map-region"
-              role="button"
-              tabIndex={0}
+              role={readOnly ? "img" : "button"}
+              tabIndex={readOnly ? -1 : 0}
               aria-label={`${mapFeature.name}: ${status ?? "blank"}`}
               fill={status ? placeStatusColors[status] : defaultFill}
               stroke={strokeColor}
               strokeWidth={mapFeature.scope === "country" ? 0.35 : 0.2}
-              onClick={() => onTogglePlace(placeKey)}
+              onClick={() => {
+                if (!readOnly) {
+                  onTogglePlace(placeKey);
+                }
+              }}
               onKeyDown={(event) => {
+                if (readOnly) {
+                  return;
+                }
+
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   onTogglePlace(placeKey);

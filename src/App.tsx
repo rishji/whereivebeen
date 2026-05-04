@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import { AuthPanel } from "./components/AuthPanel";
 import { EditableMap } from "./components/EditableMap";
 import { HistoryExplorer } from "./components/HistoryExplorer";
 import { Legend } from "./components/Legend";
+import { PublicGallery } from "./components/PublicGallery";
+import { VisibilityPanel } from "./components/VisibilityPanel";
+import {
+  clearRemotePlaceStatuses,
+  loadRemotePlaceStatuses,
+  loadRemoteUserProfile,
+  saveRemotePlaceStatuses,
+  saveRemoteUserProfile
+} from "./lib/supabaseStore";
+import { useSupabaseSession } from "./lib/useSupabaseSession";
+import { defaultUserProfile, type UserProfile } from "./lib/publicGallery";
 import {
   cyclePlaceStatus,
   exportPlaceStatuses,
@@ -12,14 +24,101 @@ import {
 } from "./lib/placeState";
 
 export function App() {
-  const [activePage, setActivePage] = useState<"map" | "history">("map");
+  const { session, loading: sessionLoading } = useSupabaseSession();
+  const [activePage, setActivePage] = useState<"map" | "history" | "gallery">("map");
   const [statuses, setStatuses] = useState<PlaceStatuses>(() => loadPlaceStatuses());
+  const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [message, setMessage] = useState<string>("Click a place to cycle through statuses.");
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [isRemoteReady, setIsRemoteReady] = useState(!session);
 
   useEffect(() => {
     savePlaceStatuses(statuses);
   }, [statuses]);
+
+  useEffect(() => {
+    if (!session) {
+      setProfile(defaultUserProfile);
+      setIsProfileLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsProfileLoading(true);
+
+    void (async () => {
+      try {
+        const remoteProfile = await loadRemoteUserProfile(session);
+
+        if (!isCancelled) {
+          setProfile(remoteProfile);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setMessage(error instanceof Error ? error.message : "Could not load public gallery settings.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsProfileLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session) {
+      setIsRemoteReady(true);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsRemoteReady(false);
+    setMessage(`Loading your saved map for ${session.user.email ?? "your account"}...`);
+
+    void (async () => {
+      try {
+        const remoteStatuses = await loadRemotePlaceStatuses(session);
+
+        if (isCancelled) {
+          return;
+        }
+
+        if (remoteStatuses) {
+          setStatuses(remoteStatuses);
+          savePlaceStatuses(remoteStatuses);
+          setMessage(`Loaded your saved map for ${session.user.email ?? "your account"}.`);
+        } else {
+          await saveRemotePlaceStatuses(session, statuses);
+          setMessage(`Created a cloud copy for ${session.user.email ?? "your account"}.`);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setMessage(error instanceof Error ? error.message : "Could not load account data.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsRemoteReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    if (session && isRemoteReady) {
+      void saveRemotePlaceStatuses(session, statuses).catch((error: unknown) => {
+        setMessage(error instanceof Error ? error.message : "Could not sync map to your account.");
+      });
+    }
+  }, [isRemoteReady, session, statuses]);
 
   function togglePlace(placeKey: string) {
     setStatuses((currentStatuses) => {
@@ -65,9 +164,26 @@ export function App() {
     }
   }
 
-  function resetMap() {
+  async function resetMap() {
     setStatuses({});
     setMessage("Reset all map statuses.");
+
+    if (session) {
+      try {
+        await clearRemotePlaceStatuses(session);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Could not clear account map.");
+      }
+    }
+  }
+
+  async function saveProfile(nextProfile: UserProfile) {
+    if (!session) {
+      return;
+    }
+
+    await saveRemoteUserProfile(session, nextProfile);
+    setProfile(nextProfile);
   }
 
   const markedPlacesCount = Object.keys(statuses).length;
@@ -84,9 +200,18 @@ export function App() {
           </p>
           <p className="subtle-note">Edits are saved in this browser and survive refreshes and deploys.</p>
         </div>
-        <div className="stats-card">
-          <span className="stats-value">{markedPlacesCount}</span>
-          <span className="stats-label">marked places</span>
+        <div className="hero-side">
+          <div className="stats-card">
+            <span className="stats-value">{markedPlacesCount}</span>
+            <span className="stats-label">marked places</span>
+          </div>
+          <AuthPanel session={session} loading={sessionLoading} />
+          <VisibilityPanel
+            session={session}
+            profile={profile}
+            disabled={sessionLoading || isProfileLoading}
+            onSave={saveProfile}
+          />
         </div>
       </section>
 
@@ -105,6 +230,13 @@ export function App() {
         >
           History
         </button>
+        <button
+          type="button"
+          className={activePage === "gallery" ? "active" : "secondary"}
+          onClick={() => setActivePage("gallery")}
+        >
+          Public Gallery
+        </button>
       </nav>
 
       {activePage === "map" ? (
@@ -118,7 +250,7 @@ export function App() {
               <button type="button" onClick={() => importInputRef.current?.click()}>
                 Import JSON
               </button>
-              <button type="button" className="secondary" onClick={resetMap}>
+              <button type="button" className="secondary" onClick={() => void resetMap()}>
                 Reset
               </button>
               <input
@@ -137,8 +269,10 @@ export function App() {
             {message}
           </p>
         </>
+      ) : activePage === "history" ? (
+        <HistoryExplorer session={session} />
       ) : (
-        <HistoryExplorer />
+        <PublicGallery />
       )}
     </main>
   );
