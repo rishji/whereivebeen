@@ -81,11 +81,11 @@ function isDailyVisitSummary(value: unknown): boolean {
   );
 }
 
-function isStringArray(value: unknown): boolean {
+function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function hasUniqueValues(values: unknown[]): boolean {
+function hasUniqueValues(values: readonly unknown[]): boolean {
   return new Set(values).size === values.length;
 }
 
