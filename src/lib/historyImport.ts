@@ -5,6 +5,7 @@ import { parseGoogleLocationHistory } from "./locationHistoryParser";
 import { parseNaturalEarthCities } from "./cityData";
 import type { CityRecord } from "./cityTypes";
 import { summarizeVisitedCities } from "./citySummarizer";
+import { buildDailyVisits, type DailySourceCounts } from "./dailyVisitSummary";
 import type { LocationHistoryPlaceSummary } from "./historySummaryTypes";
 import type { LocationPoint } from "./locationHistoryTypes";
 import type { PlaceScope } from "./placeState";
@@ -44,6 +45,12 @@ export async function mergeAndSummarize({
 
   const places = summarizeVisitedPlaces(merged, assets.features);
   const cities = summarizeVisitedCities(merged, assets.cities);
+  const sourceCountsByDate = buildSourceCountsByDate(mapsPoints, photosPoints, mapsDates);
+  const dailyVisits = buildDailyVisits({
+    places,
+    cities,
+    sourceCountsByDate: Object.fromEntries(sourceCountsByDate)
+  });
 
   return {
     schemaVersion: 1,
@@ -51,8 +58,40 @@ export async function mergeAndSummarize({
     sourcePointCount: merged.length,
     sourcePointCounts: { maps: mapsPoints.length, photos: photosPoints.length },
     places,
-    cities
+    cities,
+    dailyVisits
   };
+}
+
+export function buildSourceCountsByDate(
+  mapsPoints: LocationPoint[],
+  photosPoints: LocationPoint[],
+  mapsDates: Set<string>
+): Map<string, DailySourceCounts> {
+  const countsByDate = new Map<string, DailySourceCounts>();
+
+  for (const point of mapsPoints) {
+    incrementSourceCount(countsByDate, timestampToDate(point.timestamp), "maps");
+  }
+
+  for (const point of photosPoints) {
+    const date = timestampToDate(point.timestamp);
+    if (!mapsDates.has(date)) {
+      incrementSourceCount(countsByDate, date, "photos");
+    }
+  }
+
+  return countsByDate;
+}
+
+export function incrementSourceCount(
+  counts: Map<string, DailySourceCounts>,
+  date: string,
+  source: keyof DailySourceCounts
+): void {
+  const existingCounts = counts.get(date) ?? { maps: 0, photos: 0 };
+  existingCounts[source] += 1;
+  counts.set(date, existingCounts);
 }
 
 export async function importTakeoutLocationHistory(file: File): Promise<LocationHistoryPlaceSummary> {
