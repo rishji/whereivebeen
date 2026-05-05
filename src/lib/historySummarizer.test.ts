@@ -36,6 +36,16 @@ describe("history summarizer", () => {
     expect(timestampToDate("2011-09-12T06:31:54.212-04:00")).toBe("2011-09-12");
   });
 
+  it("uses GPS location to determine local date for UTC timestamps (west of UTC)", () => {
+    // San Francisco (UTC-8 in January / PST): 2020-01-02T04:00Z = Jan 1 at 8 PM local
+    expect(timestampToDate("2020-01-02T04:00:00.000Z", 37.7749, -122.4194)).toBe("2020-01-01");
+  });
+
+  it("uses GPS location to determine local date for UTC timestamps (east of UTC)", () => {
+    // Tokyo (UTC+9): 2020-01-01T16:00Z = Jan 2 at 1 AM local
+    expect(timestampToDate("2020-01-01T16:00:00.000Z", 35.6762, 139.6503)).toBe("2020-01-02");
+  });
+
   it("compresses consecutive dates into spans", () => {
     expect(compressDateSpans(["2020-01-01", "2020-01-02", "2020-01-04"])).toEqual([
       {

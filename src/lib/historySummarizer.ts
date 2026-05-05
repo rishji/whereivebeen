@@ -1,5 +1,6 @@
 import { geoContains } from "d3-geo";
 import type { Geometry } from "geojson";
+import tzlookup from "tz-lookup";
 import type { PlaceMapFeature } from "./mapData";
 import type { LocationPoint } from "./locationHistoryTypes";
 import type { DateSpan, VisitedPlaceSummary } from "./historySummaryTypes";
@@ -32,7 +33,7 @@ export function summarizeVisitedPlaces(
   }));
 
   for (const point of points) {
-    const date = timestampToDate(point.timestamp);
+    const date = timestampToDate(point.timestamp, point.latitude, point.longitude);
 
     for (const { feature, bounds } of boundedFeatures) {
       if (!isPointInBounds(point, bounds)) {
@@ -100,8 +101,14 @@ export function compressDateSpans(sortedDates: string[]): DateSpan[] {
   return spans;
 }
 
-export function timestampToDate(timestamp: string): string {
-  if (/^\d{4}-\d{2}-\d{2}/.test(timestamp)) {
+export function timestampToDate(timestamp: string, latitude?: number, longitude?: number): string {
+  // Plain date — already done
+  if (/^\d{4}-\d{2}-\d{2}$/.test(timestamp)) {
+    return timestamp;
+  }
+
+  // ISO with explicit UTC offset — local date is in the first 10 chars
+  if (/^\d{4}-\d{2}-\d{2}T.+[+-]\d{2}:\d{2}$/.test(timestamp)) {
     return timestamp.slice(0, 10);
   }
 
@@ -110,7 +117,22 @@ export function timestampToDate(timestamp: string): string {
     throw new Error(`Invalid timestamp: ${timestamp}`);
   }
 
-  return date.toISOString().slice(0, 10);
+  // For UTC timestamps, derive local date from the event's GPS location when available;
+  // otherwise fall back to the browser's local timezone.
+  const timeZone =
+    latitude != null && longitude != null ? tzlookup(latitude, longitude) : undefined;
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+
+  const year = parts.find((p) => p.type === "year")!.value;
+  const month = parts.find((p) => p.type === "month")!.value;
+  const day = parts.find((p) => p.type === "day")!.value;
+  return `${year}-${month}-${day}`;
 }
 
 function nextDate(date: string): string {

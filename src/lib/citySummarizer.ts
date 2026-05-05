@@ -35,7 +35,7 @@ export function summarizeVisitedCities(
       pointCount: 0
     };
 
-    accumulator.dates.add(timestampToDate(point.timestamp));
+    accumulator.dates.add(timestampToDate(point.timestamp, point.latitude, point.longitude));
     accumulator.pointCount += 1;
     accumulators.set(city.key, accumulator);
   }
