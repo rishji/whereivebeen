@@ -29,6 +29,8 @@ import type {
 import type { LocationPoint } from "../lib/locationHistoryTypes";
 import type { CityVisitSummary } from "../lib/cityTypes";
 
+const maxCalendarRangeDays = 7305;
+
 type HistoryExplorerProps = {
   initialSummary?: LocationHistoryPlaceSummary | null;
   session: Session | null;
@@ -815,6 +817,7 @@ function DailyHistoryCalendarContent({
                 type="button"
                 className={getCalendarDayClassName(day)}
                 onClick={() => selectCalendarDay(day.isoDate)}
+                aria-label={getCalendarDayLabel(day, visibleMonth)}
                 aria-pressed={day.isSelected}
               >
                 <span>{day.dayNumber}</span>
@@ -981,12 +984,20 @@ function getDateValidationMessage(
     return parsedStart.error;
   }
 
+  if (endInput && !startInput) {
+    return "Start date is required.";
+  }
+
   if (endInput && parsedEnd && "error" in parsedEnd) {
     return parsedEnd.error;
   }
 
   if (startIso && endIso && !isDateRangeValid(startIso, endIso)) {
     return "End date must be on or after start date.";
+  }
+
+  if (startIso && endIso && getInclusiveDayCount(startIso, endIso) > maxCalendarRangeDays) {
+    return "Select 7,305 days or fewer.";
   }
 
   return null;
@@ -999,6 +1010,20 @@ function getCalendarDayClassName(day: CalendarDay): string {
     day.isOutsideMonth ? "outside-month" : "",
     day.isSelected ? "selected" : ""
   ].filter(Boolean).join(" ");
+}
+
+function getCalendarDayLabel(day: CalendarDay, visibleMonth: string): string {
+  return [
+    formatFullDateLabel(day.isoDate),
+    day.hasData ? "has data" : "missing data",
+    day.isSelected ? "selected" : "",
+    day.isOutsideMonth ? `outside ${formatMonthLabel(visibleMonth)}` : ""
+  ].filter(Boolean).join(", ");
+}
+
+function getInclusiveDayCount(startIso: string, endIso: string): number {
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((parseIsoDate(endIso).getTime() - parseIsoDate(startIso).getTime()) / millisecondsPerDay) + 1;
 }
 
 function getTodayIsoDate(): string {
@@ -1036,4 +1061,13 @@ function formatMonthLabel(monthStart: string): string {
     timeZone: "UTC",
     year: "numeric"
   }).format(parseIsoDate(monthStart));
+}
+
+function formatFullDateLabel(isoDate: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+    year: "numeric"
+  }).format(parseIsoDate(isoDate));
 }
