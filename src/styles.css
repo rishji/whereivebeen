@@ -514,6 +514,18 @@ h3 {
   padding: 0.35rem 0.5rem;
 }
 
+.instruction-cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 720px) {
+  .instruction-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .instruction-card {
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(148, 163, 184, 0.55);
@@ -522,8 +534,53 @@ h3 {
   padding: 1rem 1.1rem;
 }
 
+.instruction-card-secondary {
+  background: rgba(248, 250, 252, 0.9);
+}
+
 .instruction-card h3 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.instruction-note {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+}
+
+.instruction-tabs {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .instruction-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.instruction-section strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.instruction-code {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  display: block;
+  font-family: monospace;
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.6rem;
+  white-space: pre;
 }
 
 .instruction-card ol {

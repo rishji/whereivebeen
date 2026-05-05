@@ -22,6 +22,7 @@ export type LocationHistoryPlaceSummary = {
   schemaVersion: 1;
   generatedAt: string;
   sourcePointCount: number;
+  sourcePointCounts?: { maps: number; photos: number };
   places: VisitedPlaceSummary[];
   cities?: CityVisitSummary[];
 };

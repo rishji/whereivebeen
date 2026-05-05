@@ -25,7 +25,7 @@ export type LocationHistoryEntry = {
   }>;
 };
 
-export type LocationPointSource = "visit" | "activity-start" | "activity-end" | "timeline-path";
+export type LocationPointSource = "visit" | "activity-start" | "activity-end" | "timeline-path" | "photo";
 
 export type LocationPoint = {
   timestamp: string;

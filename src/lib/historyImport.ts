@@ -1,25 +1,63 @@
 import { mapSources } from "./mapSources";
 import { toPlaceMapFeatures, type PlaceMapFeature } from "./mapData";
-import { summarizeVisitedPlaces } from "./historySummarizer";
+import { summarizeVisitedPlaces, timestampToDate } from "./historySummarizer";
 import { parseGoogleLocationHistory } from "./locationHistoryParser";
 import { parseNaturalEarthCities } from "./cityData";
+import type { CityRecord } from "./cityTypes";
 import { summarizeVisitedCities } from "./citySummarizer";
 import type { LocationHistoryPlaceSummary } from "./historySummaryTypes";
+import type { LocationPoint } from "./locationHistoryTypes";
 import type { PlaceScope } from "./placeState";
 
-export async function importTakeoutLocationHistory(file: File): Promise<LocationHistoryPlaceSummary> {
-  const points = parseGoogleLocationHistory(JSON.parse(await file.text()));
-  const [features, cities] = await Promise.all([loadHistoryPlaceFeatures(), loadMajorCities()]);
-  const places = summarizeVisitedPlaces(points, features);
-  const citySummaries = summarizeVisitedCities(points, cities);
+type HistoryAssets = {
+  features: PlaceMapFeature[];
+  cities: CityRecord[];
+};
+
+// Module-level cache so repeated imports don't re-fetch boundary GeoJSON
+let assetsPromise: Promise<HistoryAssets> | null = null;
+
+export async function loadHistoryAssets(): Promise<HistoryAssets> {
+  if (!assetsPromise) {
+    assetsPromise = Promise.all([loadHistoryPlaceFeatures(), loadMajorCities()]).then(
+      ([features, cities]) => ({ features, cities })
+    );
+  }
+  return assetsPromise;
+}
+
+export async function mergeAndSummarize({
+  mapsPoints,
+  photosPoints
+}: {
+  mapsPoints: LocationPoint[];
+  photosPoints: LocationPoint[];
+}): Promise<LocationHistoryPlaceSummary> {
+  const assets = await loadHistoryAssets();
+
+  // Per-day merge: use Maps points for a date if any exist, else Photos
+  const mapsDates = new Set(mapsPoints.map((p) => timestampToDate(p.timestamp)));
+  const merged = [
+    ...mapsPoints,
+    ...photosPoints.filter((p) => !mapsDates.has(timestampToDate(p.timestamp)))
+  ];
+
+  const places = summarizeVisitedPlaces(merged, assets.features);
+  const cities = summarizeVisitedCities(merged, assets.cities);
 
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
-    sourcePointCount: points.length,
+    sourcePointCount: merged.length,
+    sourcePointCounts: { maps: mapsPoints.length, photos: photosPoints.length },
     places,
-    cities: citySummaries
+    cities
   };
+}
+
+export async function importTakeoutLocationHistory(file: File): Promise<LocationHistoryPlaceSummary> {
+  const mapsPoints = parseGoogleLocationHistory(JSON.parse(await file.text()));
+  return mergeAndSummarize({ mapsPoints, photosPoints: [] });
 }
 
 export async function loadHistoryPlaceFeatures(): Promise<PlaceMapFeature[]> {
@@ -44,7 +82,7 @@ export async function loadHistoryPlaceFeatures(): Promise<PlaceMapFeature[]> {
   return features.flat();
 }
 
-export async function loadMajorCities() {
+export async function loadMajorCities(): Promise<CityRecord[]> {
   const response = await fetch(mapSources.populatedPlaces);
 
   if (!response.ok) {
