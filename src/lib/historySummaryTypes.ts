@@ -18,6 +18,13 @@ export type VisitedPlaceSummary = {
   dateSpans: DateSpan[];
 };
 
+export type DailyVisitSummary = {
+  date: string;
+  sourceCounts: { maps: number; photos: number };
+  placeKeys: string[];
+  cityKeys: string[];
+};
+
 export type LocationHistoryPlaceSummary = {
   schemaVersion: 1;
   generatedAt: string;
@@ -25,4 +32,5 @@ export type LocationHistoryPlaceSummary = {
   sourcePointCounts?: { maps: number; photos: number };
   places: VisitedPlaceSummary[];
   cities?: CityVisitSummary[];
+  dailyVisits?: DailyVisitSummary[];
 };
