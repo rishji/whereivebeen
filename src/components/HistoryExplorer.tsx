@@ -50,6 +50,14 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       cities: summary?.cities ?? []
     };
   }, [summary]);
+  const summarizedPlaceCount = summary
+    ? summary.places.length + (summary.cities?.length ?? 0)
+    : 0;
+  const storageCopy = readOnly
+    ? "This is a published read-only summary. The owner opted in to showing it in the public gallery."
+    : session
+      ? "This derived summary is saved locally in this browser and synced privately to your account. It is public only if you turn on the gallery toggle."
+      : "This derived summary is saved only in this browser. Sign in to sync it privately or publish it to the gallery.";
 
   useEffect(() => {
     if (readOnly) {
@@ -205,7 +213,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
           <h2>{readOnly ? "Published History" : "History Explorer"}</h2>
           <p className="lede">
             {readOnly
-              ? "This read-only summary was published to the public gallery."
+              ? "This read-only summary was published to the public gallery by its owner."
               : "Import your Google Takeout Location History JSON. The browser derives and stores a place summary locally, and saves it to your account when you are signed in."}
           </p>
         </div>
@@ -253,26 +261,43 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       )}
 
       {summary ? (
-        <div className="history-grid">
-          <div className="history-summary-card">
-            <span className="stats-value">{summary.places.length + (summary.cities?.length ?? 0)}</span>
-            <span className="stats-label">places summarized</span>
-            <p>{summary.sourcePointCount.toLocaleString()} private points processed locally.</p>
-            <p>Map edits are stored in this browser and survive refreshes and deploys on this site.</p>
+        <>
+          <section className="history-overview">
+            <div>
+              <span className="stats-value">{summarizedPlaceCount}</span>
+              <span className="stats-label">places summarized</span>
+            </div>
+            <div className="overview-copy">
+              <p>
+                {summary.sourcePointCount.toLocaleString()} private location points were processed in
+                the browser to produce this country, state, and city summary.
+              </p>
+              <p>{storageCopy}</p>
+            </div>
+          </section>
+
+          <div className="history-grid">
+            <div className="history-list-intro">
+              <h3>Explore the summary</h3>
+              <p>
+                Select any country, state, or city below to show the visit spans in the detail panel.
+                Lists show the top entries by days summarized.
+              </p>
+            </div>
+            <PlaceGroup title="Countries" places={groupedPlaces.countries} onSelect={selectPlace} />
+            <PlaceGroup title="US States" places={groupedPlaces.usStates} onSelect={selectPlace} />
+            <PlaceGroup title="India States" places={groupedPlaces.indiaStates} onSelect={selectPlace} />
+            <CityGroup
+              title="Cities 500k+"
+              cities={groupedPlaces.cities}
+              onSelect={(city) => {
+                setSelectedCity(city);
+                setSelectedPlace(null);
+              }}
+            />
+            <DetailsPanel place={selectedPlace} city={selectedCity} />
           </div>
-          <PlaceGroup title="Countries" places={groupedPlaces.countries} onSelect={selectPlace} />
-          <PlaceGroup title="US States" places={groupedPlaces.usStates} onSelect={selectPlace} />
-          <PlaceGroup title="India States" places={groupedPlaces.indiaStates} onSelect={selectPlace} />
-          <CityGroup
-            title="Cities 500k+"
-            cities={groupedPlaces.cities}
-            onSelect={(city) => {
-              setSelectedCity(city);
-              setSelectedPlace(null);
-            }}
-          />
-          <DetailsPanel place={selectedPlace} city={selectedCity} />
-        </div>
+        </>
       ) : (
         <div className="empty-state">
           <p>{message}</p>
@@ -365,7 +390,10 @@ function DetailsPanel({
     return (
       <section className="place-details">
         <h3>Select a place</h3>
-        <p>Choose a country, state, or city to see visit date spans.</p>
+        <p>
+          Choose a country, state, or city from the summary lists. The selected item will show
+          unique days visited and the date spans that contributed to the total.
+        </p>
       </section>
     );
   }
@@ -374,8 +402,12 @@ function DetailsPanel({
     <section className="place-details">
       <h3>{item.name}</h3>
       <p>
-        {item.dayCount} unique days from {item.firstDate} to {item.lastDate}.
+        This selection includes {item.dayCount} unique days from {item.firstDate} to {item.lastDate}.
         {city ? ` Population ${city.population.toLocaleString()}.` : ""}
+      </p>
+      <p>
+        Date spans are grouped consecutive visit days, sorted newest first. Select another row in
+        the lists to replace this detail view.
       </p>
       <div className="span-list">
         {[...item.dateSpans]
