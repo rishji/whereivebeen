@@ -7,3 +7,4 @@ data/private
 takeout
 *.takeout.json
 location-history.json
+photo-locations.json

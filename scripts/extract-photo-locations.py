@@ -3,13 +3,21 @@
 Extract GPS location points from Google Photos Takeout zip files.
 
 Reads directly from zips — nothing is extracted to disk.
-Output is a single small JSON file (a few MB, not gigabytes).
+If photo-locations.json already exists, new points are merged in
+(deduplicated by timestamp + coordinates). This lets you process
+one zip at a time when disk space is limited:
 
-Usage:
+    python3 scripts/extract-photo-locations.py ~/Downloads/takeout-001.zip
+    # delete the zip, download the next one
+    python3 scripts/extract-photo-locations.py ~/Downloads/takeout-002.zip
+    # repeat for each zip — each run merges into the existing file
+
+Or process all zips at once if you have the space:
+
     python3 scripts/extract-photo-locations.py ~/Downloads/takeout-*.zip
 
-Then import the output file (photo-locations.json) into the app
-using the "Import photo-locations.json" button in the History tab.
+Then import photo-locations.json into the app using the
+"Import photo-locations.json" button in the History tab.
 """
 
 import json
@@ -62,33 +70,65 @@ def extract_point(data):
     return {"timestamp": timestamp, "latitude": geo[0], "longitude": geo[1]}
 
 
-def process_zip(zip_path, points):
+def process_zip(zip_path, points, seen):
     print(f"\nReading {os.path.basename(zip_path)} ...")
     try:
         with zipfile.ZipFile(zip_path) as zf:
             json_names = [n for n in zf.namelist() if n.endswith(".json")]
             total = len(json_names)
             found = 0
+            dupes = 0
             print(f"  {total:,} JSON files found")
 
             for i, name in enumerate(json_names):
                 if i > 0 and i % 10_000 == 0:
-                    print(f"  {i:,} / {total:,} scanned, {found:,} points so far...")
+                    print(f"  {i:,} / {total:,} scanned, {found:,} new points so far...")
                 try:
                     with zf.open(name) as f:
                         data = json.load(f)
                     point = extract_point(data)
                     if point:
-                        points.append(point)
-                        found += 1
+                        key = (point["timestamp"], point["latitude"], point["longitude"])
+                        if key in seen:
+                            dupes += 1
+                        else:
+                            seen.add(key)
+                            points.append(point)
+                            found += 1
                 except Exception:
                     pass
 
-            print(f"  Done — {found:,} location points extracted")
+            msg = f"  Done — {found:,} new points"
+            if dupes:
+                msg += f" ({dupes:,} duplicates skipped)"
+            print(msg)
     except zipfile.BadZipFile:
         print(f"  Skipping — not a valid zip file")
     except Exception as e:
         print(f"  Error: {e}")
+
+
+def load_existing(output_path):
+    """Load existing photo-locations.json and return (points list, seen set)."""
+    if not os.path.exists(output_path):
+        return [], set()
+    try:
+        with open(output_path) as f:
+            data = json.load(f)
+        raw = data.get("points") if isinstance(data, dict) else data if isinstance(data, list) else []
+        points = []
+        seen = set()
+        for p in raw:
+            if isinstance(p, dict) and "timestamp" in p and "latitude" in p and "longitude" in p:
+                key = (p["timestamp"], p["latitude"], p["longitude"])
+                if key not in seen:
+                    seen.add(key)
+                    points.append(p)
+        print(f"Loaded {len(points):,} existing points from {output_path}")
+        return points, seen
+    except Exception as e:
+        print(f"Warning: could not read existing {output_path} ({e}) — starting fresh")
+        return [], set()
 
 
 def main():
@@ -97,17 +137,23 @@ def main():
         print("Usage: python3 scripts/extract-photo-locations.py takeout-*.zip")
         sys.exit(1)
 
-    points = []
-    for path in zip_paths:
-        process_zip(path, points)
-
     output_path = "photo-locations.json"
+    points, seen = load_existing(output_path)
+    existing_count = len(points)
+
+    for path in zip_paths:
+        process_zip(path, points, seen)
+
+    added = len(points) - existing_count
     with open(output_path, "w") as f:
         json.dump({"source": "google-photos-takeout", "points": points}, f, separators=(",", ":"))
 
     size_kb = os.path.getsize(output_path) // 1024
     print(f"\n{'='*50}")
-    print(f"Done. {len(points):,} location points from {len(zip_paths)} zip file(s).")
+    if existing_count:
+        print(f"Merged: {existing_count:,} existing + {added:,} new = {len(points):,} total points.")
+    else:
+        print(f"Done. {len(points):,} location points from {len(zip_paths)} zip file(s).")
     print(f"Output: {output_path} ({size_kb:,} KB)")
     print(f"Import this file using the 'Import photo-locations.json' button in the app.")
 

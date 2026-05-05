@@ -442,13 +442,13 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
                   <li>
                     Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s)
                   </li>
-                  <li>Open <strong>Terminal</strong> on your Mac</li>
+                  <li>Open <strong>Terminal</strong> and navigate to this project folder</li>
                   <li>
-                    Run this command (adjust the path to your downloads):
-                    <pre className="instruction-code">python3 scripts/extract-photo-locations.py ~/Downloads/takeout-*.zip</pre>
+                    Run once per zip (re-running merges automatically — safe if disk space is limited):
+                    <pre className="instruction-code">python3 scripts/extract-photo-locations.py ~/Downloads/takeout-001.zip</pre>
                   </li>
-                  <li>This produces a small <code>photo-locations.json</code> file — no images extracted, no disk space used</li>
-                  <li>Click <strong>Import photo-locations.json</strong> above and select that file</li>
+                  <li>This produces a small <code>photo-locations.json</code> — no images extracted. Each run adds new points without clobbering previous ones</li>
+                  <li>After processing all zips, click <strong>Import photo-locations.json</strong> above and select that file</li>
                 </ol>
               </div>
               <div className="instruction-section">
