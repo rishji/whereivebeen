@@ -113,7 +113,6 @@ h3 {
 }
 
 .stats-card,
-.toolbar,
 .map-shell,
 .history-overview,
 .history-list-intro,
@@ -229,14 +228,28 @@ h3 {
   text-transform: uppercase;
 }
 
-.toolbar {
-  align-items: center;
+.tab-header {
+  align-items: flex-start;
   background: rgba(255, 255, 255, 0.88);
-  display: flex;
-  flex-wrap: wrap;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  display: grid;
   gap: 1rem;
-  justify-content: space-between;
-  padding: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 1.15rem;
+}
+
+.tab-header h2 {
+  font-size: clamp(2.15rem, 4vw, 4rem);
+}
+
+.tab-header .lede {
+  margin-bottom: 0;
+}
+
+.tab-header-footer {
+  grid-column: 1 / -1;
 }
 
 .page-tabs {
@@ -340,17 +353,31 @@ h3 {
   gap: 1rem;
 }
 
-.history-header {
-  align-items: flex-start;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-
 .history-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.owner-history-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.owner-history-grid .history-list-intro {
+  grid-column: span 1;
+}
+
+.owner-history-grid .place-details {
+  grid-column: span 3;
+}
+
+.gallery-history-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gallery-history-grid .history-list-intro,
+.gallery-history-grid .place-details {
+  grid-column: 1 / -1;
 }
 
 .gallery-grid {
@@ -408,6 +435,7 @@ h3 {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-height: 0;
 }
 
 .history-list-intro p,
@@ -536,11 +564,13 @@ h3 {
     align-items: flex-start;
   }
 
-  .history-header {
-    flex-direction: column;
+  .tab-header {
+    grid-template-columns: 1fr;
   }
 
-  .history-grid {
+  .history-grid,
+  .owner-history-grid,
+  .gallery-history-grid {
     grid-template-columns: 1fr;
   }
 
@@ -553,6 +583,10 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .owner-history-grid .history-list-intro,
+  .owner-history-grid .place-details,
+  .gallery-history-grid .history-list-intro,
+  .gallery-history-grid .place-details,
   .place-details {
     grid-column: span 1;
   }

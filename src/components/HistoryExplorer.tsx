@@ -207,7 +207,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
 
   return (
     <section className="history-page">
-      <div className="history-header">
+      <div className="tab-header">
         <div>
           <p className="eyebrow">Location history</p>
           <h2>{readOnly ? "Published History" : "History Explorer"}</h2>
@@ -276,14 +276,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
             </div>
           </section>
 
-          <div className="history-grid">
-            <div className="history-list-intro">
-              <h3>Explore the summary</h3>
-              <p>
-                Select any country, state, or city below to show the visit spans in the detail panel.
-                Lists show the top entries by days summarized.
-              </p>
-            </div>
+          <div className={readOnly ? "history-grid gallery-history-grid" : "history-grid owner-history-grid"}>
             <PlaceGroup title="Countries" places={groupedPlaces.countries} onSelect={selectPlace} />
             <PlaceGroup title="US States" places={groupedPlaces.usStates} onSelect={selectPlace} />
             <PlaceGroup title="India States" places={groupedPlaces.indiaStates} onSelect={selectPlace} />
@@ -295,6 +288,13 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
                 setSelectedPlace(null);
               }}
             />
+            <div className="history-list-intro">
+              <h3>Explore the summary</h3>
+              <p>
+                Select any country, state, or city above to show its visit spans in the detail panel.
+                Lists show the top entries by days summarized.
+              </p>
+            </div>
             <DetailsPanel place={selectedPlace} city={selectedCity} />
           </div>
         </>

@@ -241,8 +241,15 @@ export function App() {
 
       {activePage === "map" ? (
         <>
-          <section className="toolbar" aria-label="Map controls">
-            <Legend />
+          <section className="tab-header" aria-label="Map controls">
+            <div>
+              <p className="eyebrow">Editable map</p>
+              <h2>Travel Map</h2>
+              <p className="lede">
+                Mark countries, US states, and India states. Changes save locally first and sync to
+                your account when you are signed in.
+              </p>
+            </div>
             <div className="actions">
               <button type="button" onClick={exportJson}>
                 Export JSON
@@ -260,6 +267,9 @@ export function App() {
                 className="visually-hidden"
                 onChange={(event) => void importJson(event.target.files?.[0])}
               />
+            </div>
+            <div className="tab-header-footer">
+              <Legend />
             </div>
           </section>
 

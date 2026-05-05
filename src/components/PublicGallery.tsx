@@ -54,7 +54,7 @@ export function PublicGallery() {
 
   return (
     <section className="gallery-page">
-      <div className="history-header">
+      <div className="tab-header">
         <div>
           <p className="eyebrow">Public gallery</p>
           <h2>Shared Travel Maps</h2>
