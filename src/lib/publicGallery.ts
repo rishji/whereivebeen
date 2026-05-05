@@ -1,5 +1,6 @@
 import type { LocationHistoryPlaceSummary } from "./historySummaryTypes";
 import type { PlaceStatuses } from "./placeState";
+import { isHistorySummary } from "./historyStorage";
 
 export type UserProfile = {
   displayName: string;
@@ -77,55 +78,4 @@ function isPlaceStatuses(value: unknown): value is PlaceStatuses {
         (status) => status === "visited" || status === "lived" || status === "wantToVisit"
       )
   );
-}
-
-function isHistorySummary(value: unknown): value is LocationHistoryPlaceSummary {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<LocationHistoryPlaceSummary>;
-  return (
-    candidate.schemaVersion === 1 &&
-    Array.isArray(candidate.places) &&
-    (candidate.dailyVisits === undefined || isDailyVisitSummaries(candidate.dailyVisits))
-  );
-}
-
-function isDailyVisitSummaries(value: unknown): boolean {
-  return Array.isArray(value) && value.every(isDailyVisitSummary);
-}
-
-function isDailyVisitSummary(value: unknown): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as {
-    date?: unknown;
-    placeKeys?: unknown;
-    cityKeys?: unknown;
-    sourceCounts?: unknown;
-  };
-
-  return (
-    typeof candidate.date === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(candidate.date) &&
-    isStringArray(candidate.placeKeys) &&
-    isStringArray(candidate.cityKeys) &&
-    isDailySourceCounts(candidate.sourceCounts)
-  );
-}
-
-function isStringArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
-
-function isDailySourceCounts(value: unknown): boolean {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as { maps?: unknown; photos?: unknown };
-  return typeof candidate.maps === "number" && typeof candidate.photos === "number";
 }

@@ -55,6 +55,18 @@ describe("history storage", () => {
     [
       "invalid sourceCounts",
       { date: "2026-05-03", placeKeys: [], cityKeys: [], sourceCounts: { maps: "1", photos: 0 } }
+    ],
+    [
+      "impossible calendar date",
+      { date: "2026-02-30", placeKeys: [], cityKeys: [], sourceCounts: { maps: 1, photos: 0 } }
+    ],
+    [
+      "negative sourceCounts",
+      { date: "2026-05-03", placeKeys: [], cityKeys: [], sourceCounts: { maps: -1, photos: 0 } }
+    ],
+    [
+      "fractional sourceCounts",
+      { date: "2026-05-03", placeKeys: [], cityKeys: [], sourceCounts: { maps: 1.5, photos: 0 } }
     ]
   ])("rejects history summaries with malformed daily visits: %s", (_name, dailyVisit) => {
     expect(() =>

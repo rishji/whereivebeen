@@ -71,4 +71,33 @@ describe("public gallery model", () => {
       ])
     ).toHaveLength(1);
   });
+
+  it("filters public gallery entries with malformed daily visits", () => {
+    expect(
+      parsePublicGalleryEntries([
+        {
+          user_id: "user-1",
+          display_name: "Rishi",
+          map_payload: {
+            "country:356": "visited"
+          },
+          history_payload: {
+            schemaVersion: 1,
+            generatedAt: "2026-05-04T12:00:00.000Z",
+            sourcePointCount: 1,
+            places: [],
+            dailyVisits: [
+              {
+                date: "2026-02-30",
+                placeKeys: [],
+                cityKeys: [],
+                sourceCounts: { maps: 1, photos: 0 }
+              }
+            ]
+          },
+          updated_at: "2026-05-04T12:00:00.000Z"
+        }
+      ])
+    ).toEqual([]);
+  });
 });
