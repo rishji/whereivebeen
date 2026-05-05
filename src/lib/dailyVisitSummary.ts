@@ -39,6 +39,10 @@ export function buildDailyVisits({
     }
   }
 
+  for (const date of Object.keys(sourceCountsByDate)) {
+    getOrCreateDailyVisitDraft(visitsByDate, date);
+  }
+
   return Array.from(visitsByDate.entries())
     .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
     .map(([date, visit]) => ({

@@ -114,6 +114,25 @@ describe("daily visit summary", () => {
     ]);
   });
 
+  it("includes source-count-only dates as empty daily records", () => {
+    expect(
+      buildDailyVisits({
+        places: [],
+        cities: [],
+        sourceCountsByDate: {
+          "2020-01-06": { maps: 4, photos: 2 }
+        }
+      })
+    ).toEqual([
+      {
+        date: "2020-01-06",
+        sourceCounts: { maps: 4, photos: 2 },
+        placeKeys: [],
+        cityKeys: []
+      }
+    ]);
+  });
+
   it("queries a single date or returns null when a daily record is missing", () => {
     const dailyVisits = buildDailyVisits({
       places: [squareland],
