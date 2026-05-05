@@ -61,6 +61,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
   const photosInputRef = useRef<HTMLInputElement>(null);
   const photoPointsInputRef = useRef<HTMLInputElement>(null);
   const summaryInputRef = useRef<HTMLInputElement>(null);
+  const instructionsRef = useRef<HTMLDivElement>(null);
 
   const groupedPlaces = useMemo(() => {
     const places = summary?.places ?? [];
@@ -374,6 +375,13 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
             >
               Clear Stored
             </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => instructionsRef.current?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Instructions
+            </button>
             <input
               ref={mapsInputRef}
               type="file"
@@ -408,74 +416,6 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
         )}
       </div>
 
-      {readOnly ? null : (
-        <div className="instruction-cards">
-          <div className="instruction-card">
-            <h3>Export your Maps Timeline</h3>
-            <p className="instruction-note">
-              Google now stores your full location history on your phone. Takeout only has the last 90 days.
-            </p>
-            <div className="instruction-tabs">
-              <div className="instruction-section">
-                <strong>iPhone</strong>
-                <ol>
-                  <li>Open the <strong>Google Maps</strong> app</li>
-                  <li>Tap your profile photo → <strong>Timeline</strong></li>
-                  <li>Tap the <strong>⋮</strong> menu → <strong>Location &amp; privacy settings</strong></li>
-                  <li>Tap <strong>Export Timeline data</strong> and wait for it to finish</li>
-                  <li>Tap <strong>Share</strong> → <strong>AirDrop</strong> → your Mac</li>
-                  <li>Import the <code>location-history.json</code> file here</li>
-                </ol>
-              </div>
-              <div className="instruction-section">
-                <strong>Android</strong>
-                <ol>
-                  <li>Open the <strong>Google Maps</strong> app</li>
-                  <li>Tap your profile photo → <strong>Timeline</strong></li>
-                  <li>Tap the <strong>⋮</strong> menu → <strong>Export Timeline data</strong></li>
-                  <li>Transfer the file to your computer via USB, email, or Google Drive</li>
-                  <li>Import the <code>location-history.json</code> file here</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-
-          <div className="instruction-card instruction-card-secondary">
-            <h3>Add Google Photos (optional)</h3>
-            <p className="instruction-note">
-              Photos with location tags fill in days your Maps Timeline doesn't cover. Maps data always takes precedence.
-            </p>
-            <div className="instruction-tabs">
-              <div className="instruction-section">
-                <strong>Large libraries (recommended)</strong>
-                <ol>
-                  <li>
-                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s)
-                  </li>
-                  <li>Open <strong>Terminal</strong> and navigate to this project folder</li>
-                  <li>
-                    Run once per zip (re-running merges automatically — safe if disk space is limited):
-                    <pre className="instruction-code">python3 scripts/extract-photo-locations.py ~/Downloads/takeout-001.zip</pre>
-                  </li>
-                  <li>This produces a small <code>photo-locations.json</code> — no images extracted. Each run adds new points without clobbering previous ones</li>
-                  <li>After processing all zips, click <strong>Import photo-locations.json</strong> above and select that file</li>
-                </ol>
-              </div>
-              <div className="instruction-section">
-                <strong>Small libraries</strong>
-                <ol>
-                  <li>
-                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s)
-                  </li>
-                  <li>Extract each zip to a folder on your computer</li>
-                  <li>Click <strong>Add Photos Folder</strong> above and select the extracted <strong>Google Photos</strong> folder</li>
-                  <li>For multiple zips, repeat for each extracted folder — points accumulate</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {summary ? (
         <>
@@ -538,6 +478,77 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
           {message}
         </p>
       ) : null}
+
+      {readOnly ? null : (
+        <div className="instruction-cards" ref={instructionsRef}>
+          <div className="instruction-card">
+            <h3>Export your Maps Timeline</h3>
+            <p className="instruction-note">
+              Google now stores your full location history on your phone. Takeout only has the last 90 days.
+            </p>
+            <div className="instruction-tabs">
+              <div className="instruction-section">
+                <strong>iPhone</strong>
+                <ol>
+                  <li>Open the <strong>Google Maps</strong> app</li>
+                  <li>Tap your profile photo → <strong>Timeline</strong></li>
+                  <li>Tap the <strong>⋮</strong> menu → <strong>Location &amp; privacy settings</strong></li>
+                  <li>Tap <strong>Export Timeline data</strong> and wait for it to finish</li>
+                  <li>Tap <strong>Share</strong> → <strong>AirDrop</strong> → your Mac</li>
+                  <li>Import the <code>location-history.json</code> file here</li>
+                </ol>
+              </div>
+              <div className="instruction-section">
+                <strong>Android</strong>
+                <ol>
+                  <li>Open the <strong>Google Maps</strong> app</li>
+                  <li>Tap your profile photo → <strong>Timeline</strong></li>
+                  <li>Tap the <strong>⋮</strong> menu → <strong>Export Timeline data</strong></li>
+                  <li>Transfer the file to your computer via USB, email, or Google Drive</li>
+                  <li>Import the <code>location-history.json</code> file here</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div className="instruction-card instruction-card-secondary">
+            <h3>Add Google Photos (optional)</h3>
+            <p className="instruction-note">
+              Photos with location tags fill in days your Maps Timeline doesn't cover. Maps data always takes precedence.
+            </p>
+            <div className="instruction-tabs">
+              <div className="instruction-section">
+                <strong>Large libraries (recommended)</strong>
+                <ol>
+                  <li>
+                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s) to your <strong>Downloads</strong> folder
+                  </li>
+                  <li>
+                    Download <a href={`${import.meta.env.BASE_URL}extract-photo-locations.py`} download>extract-photo-locations.py</a> and save it to your <strong>Downloads</strong> folder
+                  </li>
+                  <li>
+                    Open <strong>Terminal</strong> and run once per zip (re-running merges automatically — safe if disk space is limited):
+                    <pre className="instruction-code">python3 ~/Downloads/extract-photo-locations.py ~/Downloads/takeout-001.zip</pre>
+                  </li>
+                  <li>This produces <code>photo-locations.json</code> in your Downloads folder — no images extracted. Each run adds new points without clobbering previous ones</li>
+                  <li>After processing all zips, click <strong>Import photo-locations.json</strong> above and select the file from your Downloads folder</li>
+                </ol>
+              </div>
+              <div className="instruction-section">
+                <strong>Small libraries</strong>
+                <ol>
+                  <li>
+                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s)
+                  </li>
+                  <li>Extract each zip to a folder on your computer</li>
+                  <li>Click <strong>Add Photos Folder</strong> above and select the extracted <strong>Google Photos</strong> folder</li>
+                  <li>For multiple zips, repeat for each extracted folder — points accumulate</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 
