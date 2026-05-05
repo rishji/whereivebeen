@@ -100,4 +100,39 @@ describe("public gallery model", () => {
       ])
     ).toEqual([]);
   });
+
+  it("filters public gallery entries with duplicate daily visit dates", () => {
+    expect(
+      parsePublicGalleryEntries([
+        {
+          user_id: "user-1",
+          display_name: "Rishi",
+          map_payload: {
+            "country:356": "visited"
+          },
+          history_payload: {
+            schemaVersion: 1,
+            generatedAt: "2026-05-04T12:00:00.000Z",
+            sourcePointCount: 2,
+            places: [],
+            dailyVisits: [
+              {
+                date: "2026-05-03",
+                placeKeys: [],
+                cityKeys: [],
+                sourceCounts: { maps: 1, photos: 0 }
+              },
+              {
+                date: "2026-05-03",
+                placeKeys: [],
+                cityKeys: [],
+                sourceCounts: { maps: 1, photos: 0 }
+              }
+            ]
+          },
+          updated_at: "2026-05-04T12:00:00.000Z"
+        }
+      ])
+    ).toEqual([]);
+  });
 });

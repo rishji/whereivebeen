@@ -51,7 +51,11 @@ export function isHistorySummary(value: unknown): value is LocationHistoryPlaceS
 }
 
 function isDailyVisitSummaries(value: unknown): boolean {
-  return Array.isArray(value) && value.every(isDailyVisitSummary);
+  if (!Array.isArray(value) || !value.every(isDailyVisitSummary)) {
+    return false;
+  }
+
+  return hasUniqueValues(value.map((dailyVisit) => dailyVisit.date));
 }
 
 function isDailyVisitSummary(value: unknown): boolean {
@@ -70,13 +74,19 @@ function isDailyVisitSummary(value: unknown): boolean {
     typeof candidate.date === "string" &&
     isCalendarDate(candidate.date) &&
     isStringArray(candidate.placeKeys) &&
+    hasUniqueValues(candidate.placeKeys) &&
     isStringArray(candidate.cityKeys) &&
+    hasUniqueValues(candidate.cityKeys) &&
     isDailySourceCounts(candidate.sourceCounts)
   );
 }
 
 function isStringArray(value: unknown): boolean {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function hasUniqueValues(values: unknown[]): boolean {
+  return new Set(values).size === values.length;
 }
 
 function isDailySourceCounts(value: unknown): boolean {

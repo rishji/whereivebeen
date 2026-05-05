@@ -67,12 +67,38 @@ export function queryDailyVisitRange(
 ): DailyVisitRangeResult {
   const dates = expandDateRange(startDate, endDate);
   const dateSet = new Set(dates);
-  const matchedVisits = dailyVisits.filter((dailyVisit) => dateSet.has(dailyVisit.date));
+  const matchedVisitsByDate = new Map<string, DailyVisitSummary>();
   const placeCounts = new Map<string, number>();
   const cityCounts = new Map<string, number>();
   const sourceCounts: DailySourceCounts = { maps: 0, photos: 0 };
 
-  for (const dailyVisit of matchedVisits) {
+  for (const dailyVisit of dailyVisits) {
+    if (!dateSet.has(dailyVisit.date)) {
+      continue;
+    }
+
+    const existingVisit = matchedVisitsByDate.get(dailyVisit.date);
+    if (!existingVisit) {
+      matchedVisitsByDate.set(dailyVisit.date, {
+        ...dailyVisit,
+        placeKeys: Array.from(new Set(dailyVisit.placeKeys)),
+        cityKeys: Array.from(new Set(dailyVisit.cityKeys))
+      });
+      continue;
+    }
+
+    matchedVisitsByDate.set(dailyVisit.date, {
+      date: dailyVisit.date,
+      sourceCounts: {
+        maps: Math.max(existingVisit.sourceCounts.maps, dailyVisit.sourceCounts.maps),
+        photos: Math.max(existingVisit.sourceCounts.photos, dailyVisit.sourceCounts.photos)
+      },
+      placeKeys: Array.from(new Set([...existingVisit.placeKeys, ...dailyVisit.placeKeys])),
+      cityKeys: Array.from(new Set([...existingVisit.cityKeys, ...dailyVisit.cityKeys]))
+    });
+  }
+
+  for (const dailyVisit of matchedVisitsByDate.values()) {
     sourceCounts.maps += dailyVisit.sourceCounts.maps;
     sourceCounts.photos += dailyVisit.sourceCounts.photos;
     incrementCounts(placeCounts, dailyVisit.placeKeys);
@@ -83,8 +109,8 @@ export function queryDailyVisitRange(
     startDate,
     endDate,
     totalDays: dates.length,
-    daysWithData: matchedVisits.length,
-    missingDays: dates.length - matchedVisits.length,
+    daysWithData: matchedVisitsByDate.size,
+    missingDays: dates.length - matchedVisitsByDate.size,
     sourceCounts,
     places: sortCounts(placeCounts),
     cities: sortCounts(cityCounts)

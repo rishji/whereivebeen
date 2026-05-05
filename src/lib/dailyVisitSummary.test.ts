@@ -176,4 +176,42 @@ describe("daily visit summary", () => {
       ]
     });
   });
+
+  it("does not inflate range day counts for duplicate records or duplicate keys", () => {
+    expect(
+      queryDailyVisitRange(
+        [
+          {
+            date: "2020-01-01",
+            sourceCounts: { maps: 2, photos: 1 },
+            placeKeys: ["country:squareland", "country:squareland"],
+            cityKeys: ["city:metro", "city:metro"]
+          },
+          {
+            date: "2020-01-01",
+            sourceCounts: { maps: 2, photos: 1 },
+            placeKeys: ["country:squareland", "country:circleland"],
+            cityKeys: ["city:metro", "city:alpha"]
+          }
+        ],
+        "2020-01-01",
+        "2020-01-02"
+      )
+    ).toEqual({
+      startDate: "2020-01-01",
+      endDate: "2020-01-02",
+      totalDays: 2,
+      daysWithData: 1,
+      missingDays: 1,
+      sourceCounts: { maps: 2, photos: 1 },
+      places: [
+        { key: "country:circleland", dayCount: 1 },
+        { key: "country:squareland", dayCount: 1 }
+      ],
+      cities: [
+        { key: "city:alpha", dayCount: 1 },
+        { key: "city:metro", dayCount: 1 }
+      ]
+    });
+  });
 });

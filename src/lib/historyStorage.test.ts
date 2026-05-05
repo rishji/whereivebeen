@@ -42,6 +42,49 @@ describe("history storage", () => {
     );
   });
 
+  it("rejects history summaries with duplicate daily visit dates", () => {
+    expect(() =>
+      parseHistorySummary(
+        JSON.stringify({
+          ...summary,
+          dailyVisits: [
+            {
+              date: "2026-05-03",
+              placeKeys: [],
+              cityKeys: [],
+              sourceCounts: { maps: 1, photos: 0 }
+            },
+            {
+              date: "2026-05-03",
+              placeKeys: [],
+              cityKeys: [],
+              sourceCounts: { maps: 0, photos: 1 }
+            }
+          ]
+        })
+      )
+    ).toThrow("Invalid history summary JSON");
+  });
+
+  it.each([
+    ["duplicate placeKeys", { date: "2026-05-03", placeKeys: ["country:356", "country:356"], cityKeys: [] }],
+    ["duplicate cityKeys", { date: "2026-05-03", placeKeys: [], cityKeys: ["city:delhi", "city:delhi"] }]
+  ])("rejects history summaries with %s in a daily visit", (_name, dailyVisit) => {
+    expect(() =>
+      parseHistorySummary(
+        JSON.stringify({
+          ...summary,
+          dailyVisits: [
+            {
+              ...dailyVisit,
+              sourceCounts: { maps: 1, photos: 0 }
+            }
+          ]
+        })
+      )
+    ).toThrow("Invalid history summary JSON");
+  });
+
   it.each([
     [
       "date in mm-dd-yyyy format",
