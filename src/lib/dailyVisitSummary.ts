@@ -15,6 +15,9 @@ export type DailyVisitRangeResult = {
   totalDays: number;
   daysWithData: number;
   missingDays: number;
+  mapsOnlyDays: number;
+  photosOnlyDays: number;
+  bothDays: number;
   sourceCounts: DailySourceCounts;
   places: Array<{ key: string; dayCount: number }>;
   cities: Array<{ key: string; dayCount: number }>;
@@ -71,6 +74,9 @@ export function queryDailyVisitRange(
   const placeCounts = new Map<string, number>();
   const cityCounts = new Map<string, number>();
   const sourceCounts: DailySourceCounts = { maps: 0, photos: 0 };
+  let mapsOnlyDays = 0;
+  let photosOnlyDays = 0;
+  let bothDays = 0;
 
   for (const dailyVisit of dailyVisits) {
     if (!dateSet.has(dailyVisit.date)) {
@@ -103,6 +109,15 @@ export function queryDailyVisitRange(
     sourceCounts.photos += dailyVisit.sourceCounts.photos;
     incrementCounts(placeCounts, dailyVisit.placeKeys);
     incrementCounts(cityCounts, dailyVisit.cityKeys);
+    const hasMaps = dailyVisit.sourceCounts.maps > 0;
+    const hasPhotos = dailyVisit.sourceCounts.photos > 0;
+    if (hasMaps && hasPhotos) {
+      bothDays++;
+    } else if (hasMaps) {
+      mapsOnlyDays++;
+    } else if (hasPhotos) {
+      photosOnlyDays++;
+    }
   }
 
   return {
@@ -111,6 +126,9 @@ export function queryDailyVisitRange(
     totalDays: dates.length,
     daysWithData: matchedVisitsByDate.size,
     missingDays: dates.length - matchedVisitsByDate.size,
+    mapsOnlyDays,
+    photosOnlyDays,
+    bothDays,
     sourceCounts,
     places: sortCounts(placeCounts),
     cities: sortCounts(cityCounts)

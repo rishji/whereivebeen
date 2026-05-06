@@ -165,6 +165,9 @@ describe("daily visit summary", () => {
       totalDays: 5,
       daysWithData: 4,
       missingDays: 1,
+      mapsOnlyDays: 1,
+      photosOnlyDays: 0,
+      bothDays: 2,
       sourceCounts: { maps: 8, photos: 4 },
       places: [
         { key: "country:squareland", dayCount: 3 },
@@ -203,6 +206,9 @@ describe("daily visit summary", () => {
       totalDays: 2,
       daysWithData: 1,
       missingDays: 1,
+      mapsOnlyDays: 0,
+      photosOnlyDays: 0,
+      bothDays: 1,
       sourceCounts: { maps: 2, photos: 1 },
       places: [
         { key: "country:circleland", dayCount: 1 },

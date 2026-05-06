@@ -22,11 +22,42 @@ import {
   savePlaceStatuses,
   type PlaceStatuses
 } from "./lib/placeState";
+import { loadHistorySummary } from "./lib/historyStorage";
+import type { LocationHistoryPlaceSummary } from "./lib/historySummaryTypes";
+
+const derivedStatusesKey = "where-ive-been.derived-place-statuses.v1";
+
+function loadDerivedStatuses(): PlaceStatuses {
+  const stored = window.localStorage.getItem(derivedStatusesKey);
+  if (stored) {
+    try {
+      return importPlaceStatuses(stored);
+    } catch {
+      // fall through to seed from history
+    }
+  }
+  const summary = loadHistorySummary();
+  return summary ? buildDerivedStatusesFromSummary(summary) : {};
+}
+
+function buildDerivedStatusesFromSummary(summary: LocationHistoryPlaceSummary): PlaceStatuses {
+  const mapScopes = new Set(["country", "us-state", "india-state"]);
+  return Object.fromEntries(
+    summary.places
+      .filter((p) => mapScopes.has(p.scope))
+      .map((p) => [p.key, "visited" as const])
+  );
+}
+
+function saveDerivedStatuses(statuses: PlaceStatuses): void {
+  window.localStorage.setItem(derivedStatusesKey, exportPlaceStatuses(statuses));
+}
 
 export function App() {
   const { session, loading: sessionLoading } = useSupabaseSession();
-  const [activePage, setActivePage] = useState<"map" | "history" | "gallery">("map");
+  const [activePage, setActivePage] = useState<"map" | "history" | "derivedMap" | "gallery">("map");
   const [statuses, setStatuses] = useState<PlaceStatuses>(() => loadPlaceStatuses());
+  const [derivedStatuses, setDerivedStatuses] = useState<PlaceStatuses>(() => loadDerivedStatuses());
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [message, setMessage] = useState<string>("Click a place to cycle through statuses.");
@@ -36,6 +67,10 @@ export function App() {
   useEffect(() => {
     savePlaceStatuses(statuses);
   }, [statuses]);
+
+  useEffect(() => {
+    saveDerivedStatuses(derivedStatuses);
+  }, [derivedStatuses]);
 
   useEffect(() => {
     if (!session) {
@@ -177,6 +212,25 @@ export function App() {
     }
   }
 
+  function toggleDerivedPlace(placeKey: string) {
+    setDerivedStatuses((current) => {
+      const nextStatus = cyclePlaceStatus(current[placeKey]);
+      const next = { ...current };
+      if (nextStatus) {
+        next[placeKey] = nextStatus;
+      } else {
+        delete next[placeKey];
+      }
+      return next;
+    });
+  }
+
+  function resetDerivedFromHistory() {
+    const summary = loadHistorySummary();
+    const next = summary ? buildDerivedStatusesFromSummary(summary) : {};
+    setDerivedStatuses(next);
+  }
+
   async function saveProfile(nextProfile: UserProfile) {
     if (!session) {
       return;
@@ -201,10 +255,6 @@ export function App() {
           <p className="subtle-note">Edits are saved in this browser and survive refreshes and deploys.</p>
         </div>
         <div className="hero-side">
-          <div className="stats-card">
-            <span className="stats-value">{markedPlacesCount}</span>
-            <span className="stats-label">marked places</span>
-          </div>
           <AuthPanel session={session} loading={sessionLoading} />
           <VisibilityPanel
             session={session}
@@ -229,6 +279,13 @@ export function App() {
           onClick={() => setActivePage("history")}
         >
           History
+        </button>
+        <button
+          type="button"
+          className={activePage === "derivedMap" ? "active" : "secondary"}
+          onClick={() => setActivePage("derivedMap")}
+        >
+          Derived Map
         </button>
         <button
           type="button"
@@ -273,6 +330,13 @@ export function App() {
             </div>
           </section>
 
+          <div className="map-stat-row">
+            <div className="stats-card">
+              <span className="stats-value">{markedPlacesCount}</span>
+              <span className="stats-label">marked places</span>
+            </div>
+          </div>
+
           <EditableMap statuses={statuses} onTogglePlace={togglePlace} />
 
           <p className="status-message" role="status">
@@ -281,6 +345,32 @@ export function App() {
         </>
       ) : activePage === "history" ? (
         <HistoryExplorer session={session} />
+      ) : activePage === "derivedMap" ? (
+        <>
+          <section className="tab-header" aria-label="Derived map controls">
+            <div>
+              <p className="eyebrow">Derived map</p>
+              <h2>History Map</h2>
+              <p className="lede">
+                Auto-filled from your imported location history. Click any place to adjust the status. Edits save locally.
+              </p>
+            </div>
+            <div className="actions">
+              <button type="button" className="secondary" onClick={resetDerivedFromHistory}>
+                Reset from history
+              </button>
+            </div>
+          </section>
+
+          <div className="map-stat-row">
+            <div className="stats-card">
+              <span className="stats-value">{Object.keys(derivedStatuses).length}</span>
+              <span className="stats-label">marked places</span>
+            </div>
+          </div>
+
+          <EditableMap statuses={derivedStatuses} onTogglePlace={toggleDerivedPlace} />
+        </>
       ) : (
         <PublicGallery />
       )}

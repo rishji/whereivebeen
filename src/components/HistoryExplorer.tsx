@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { mergeAndSummarize } from "../lib/historyImport";
 import { parseGoogleLocationHistory } from "../lib/locationHistoryParser";
-import { parsePhotosSidecars, parsePreExtractedPhotoPoints } from "../lib/photosTakeoutParser";
+import { parsePreExtractedPhotoPoints } from "../lib/photosTakeoutParser";
 import {
   clearHistorySummary,
   loadHistorySummary,
-  parseHistorySummary,
   saveHistorySummary
 } from "../lib/historyStorage";
 import {
@@ -58,9 +57,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
   const [photosPoints, setPhotosPoints] = useState<LocationPoint[]>([]);
 
   const mapsInputRef = useRef<HTMLInputElement>(null);
-  const photosInputRef = useRef<HTMLInputElement>(null);
   const photoPointsInputRef = useRef<HTMLInputElement>(null);
-  const summaryInputRef = useRef<HTMLInputElement>(null);
   const instructionsRef = useRef<HTMLDivElement>(null);
 
   const groupedPlaces = useMemo(() => {
@@ -197,49 +194,6 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
     }
   }
 
-  async function importPhotosFiles(files: FileList | null) {
-    if (!files || files.length === 0) {
-      return;
-    }
-
-    setIsImportingPhotos(true);
-    const fileArray = Array.from(files);
-    const jsonCount = fileArray.filter((f) => f.name.endsWith(".json")).length;
-    setMessage(`Scanning ${jsonCount.toLocaleString()} metadata files from your Photos export...`);
-
-    try {
-      const newPoints = await parsePhotosSidecars(fileArray, (done, total) => {
-        setMessage(`Reading photo metadata: ${done.toLocaleString()} / ${total.toLocaleString()} files...`);
-      });
-
-      // Accumulate across multiple folder picks (for split Takeout archives)
-      const accumulated = [...photosPoints, ...newPoints];
-      setPhotosPoints(accumulated);
-
-      if (accumulated.length === 0) {
-        setMessage("No location data found in those files. Make sure you selected a Google Photos Takeout folder.");
-        return;
-      }
-
-      setMessage(`Found ${accumulated.length.toLocaleString()} photo location points. Mapping to places...`);
-      const nextSummary = await applyMergeAndSave(mapsPoints, accumulated);
-      const counts = nextSummary.sourcePointCounts;
-      const countNote = counts && counts.maps > 0
-        ? ` Maps: ${counts.maps.toLocaleString()} · Photos: ${counts.photos.toLocaleString()} points.`
-        : "";
-      setMessage(
-        `Summarized ${nextSummary.places.length} places and ${nextSummary.cities?.length ?? 0} cities.${countNote}`
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not import Photos metadata.");
-    } finally {
-      setIsImportingPhotos(false);
-      if (photosInputRef.current) {
-        photosInputRef.current.value = "";
-      }
-    }
-  }
-
   async function importPhotoPointsFile(file: File | undefined) {
     if (!file) {
       return;
@@ -274,32 +228,6 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       setIsImportingPhotos(false);
       if (photoPointsInputRef.current) {
         photoPointsInputRef.current.value = "";
-      }
-    }
-  }
-
-  async function importSummaryJson(file: File | undefined) {
-    if (!file) {
-      return;
-    }
-
-    try {
-      const nextSummary = parseHistorySummary(await file.text());
-      saveHistorySummary(nextSummary);
-      if (session && isRemoteReady) {
-        await saveRemoteHistorySummary(session, nextSummary);
-      }
-      setSummary(nextSummary);
-      setSelectedPlace(nextSummary.places[0] ?? null);
-      setSelectedCity(null);
-      setMessage(
-        `Imported and stored ${nextSummary.places.length} places and ${nextSummary.cities?.length ?? 0} cities.`
-      );
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not import that summary JSON file.");
-    } finally {
-      if (summaryInputRef.current) {
-        summaryInputRef.current.value = "";
       }
     }
   }
@@ -347,25 +275,10 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
             </button>
             <button
               type="button"
-              onClick={() => photosInputRef.current?.click()}
-              disabled={isImporting}
-            >
-              {isImportingPhotos ? "Importing..." : "Add Photos Folder"}
-            </button>
-            <button
-              type="button"
               onClick={() => photoPointsInputRef.current?.click()}
               disabled={isImporting}
             >
               {isImportingPhotos ? "Importing..." : "Import photo-locations.json"}
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => summaryInputRef.current?.click()}
-              disabled={isImporting}
-            >
-              Import Summary
             </button>
             <button
               type="button"
@@ -390,27 +303,11 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
               onChange={(event) => void importMapsJson(event.target.files?.[0])}
             />
             <input
-              ref={photosInputRef}
-              type="file"
-              // webkitdirectory lets users pick a folder on desktop; degrades to multi-file on iOS Safari
-              {...{ webkitdirectory: "", multiple: true }}
-              accept=".json"
-              className="visually-hidden"
-              onChange={(event) => void importPhotosFiles(event.target.files)}
-            />
-            <input
               ref={photoPointsInputRef}
               type="file"
               accept="application/json"
               className="visually-hidden"
               onChange={(event) => void importPhotoPointsFile(event.target.files?.[0])}
-            />
-            <input
-              ref={summaryInputRef}
-              type="file"
-              accept="application/json"
-              className="visually-hidden"
-              onChange={(event) => void importSummaryJson(event.target.files?.[0])}
             />
           </div>
         )}
@@ -420,16 +317,16 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       {summary ? (
         <>
           <section className="history-overview">
-            <div>
+            <div className="overview-stat">
               <span className="stats-value">{summarizedPlaceCount}</span>
               <span className="stats-label">places summarized</span>
             </div>
             <div className="overview-copy">
               {summary.sourcePointCounts ? (
                 <p>
-                  <strong>{summary.sourcePointCounts.maps.toLocaleString()}</strong> Maps points
+                  <strong className="overview-number">{summary.sourcePointCounts.maps.toLocaleString()}</strong> Maps points
                   {summary.sourcePointCounts.photos > 0 && (
-                    <> and <strong>{summary.sourcePointCounts.photos.toLocaleString()}</strong> Photos points</>
+                    <> and <strong className="overview-number">{summary.sourcePointCounts.photos.toLocaleString()}</strong> Photos points</>
                   )}{" "}
                   were processed in the browser to produce this summary.
                 </p>
@@ -516,36 +413,20 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
             <p className="instruction-note">
               Photos with location tags fill in days your Maps Timeline doesn't cover. Maps data always takes precedence.
             </p>
-            <div className="instruction-tabs">
-              <div className="instruction-section">
-                <strong>Large libraries (recommended)</strong>
-                <ol>
-                  <li>
-                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s) to your <strong>Downloads</strong> folder
-                  </li>
-                  <li>
-                    Download <a href={`${import.meta.env.BASE_URL}extract-photo-locations.py`} download>extract-photo-locations.py</a> and save it to your <strong>Downloads</strong> folder
-                  </li>
-                  <li>
-                    Open <strong>Terminal</strong> and run once per zip (re-running merges automatically — safe if disk space is limited):
-                    <pre className="instruction-code">python3 ~/Downloads/extract-photo-locations.py ~/Downloads/takeout-001.zip</pre>
-                  </li>
-                  <li>This produces <code>photo-locations.json</code> in your Downloads folder — no images extracted. Each run adds new points without clobbering previous ones</li>
-                  <li>After processing all zips, click <strong>Import photo-locations.json</strong> above and select the file from your Downloads folder</li>
-                </ol>
-              </div>
-              <div className="instruction-section">
-                <strong>Small libraries</strong>
-                <ol>
-                  <li>
-                    Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s)
-                  </li>
-                  <li>Extract each zip to a folder on your computer</li>
-                  <li>Click <strong>Add Photos Folder</strong> above and select the extracted <strong>Google Photos</strong> folder</li>
-                  <li>For multiple zips, repeat for each extracted folder — points accumulate</li>
-                </ol>
-              </div>
-            </div>
+            <ol>
+              <li>
+                Go to <a href="https://takeout.google.com/" target="_blank" rel="noreferrer">takeout.google.com</a>, select only <strong>Google Photos</strong>, and download the zip file(s) to your <strong>Downloads</strong> folder
+              </li>
+              <li>
+                Download <a href={`${import.meta.env.BASE_URL}extract-photo-locations.py`} download>extract-photo-locations.py</a> and save it to your <strong>Downloads</strong> folder
+              </li>
+              <li>
+                Open <strong>Terminal</strong> and run once per zip (re-running merges automatically — safe if disk space is limited):
+                <pre className="instruction-code">python3 ~/Downloads/extract-photo-locations.py ~/Downloads/takeout-001.zip</pre>
+              </li>
+              <li>This produces <code>photo-locations.json</code> in your Downloads folder — no images extracted. Each run adds new points without clobbering previous ones</li>
+              <li>After processing all zips, click <strong>Import photo-locations.json</strong> above and select the file from your Downloads folder</li>
+            </ol>
           </div>
         </div>
       )}
@@ -571,7 +452,7 @@ function PlaceGroup({ title, places, onSelect }: PlaceGroupProps) {
         {title} <span>{places.length}</span>
       </h3>
       <div className="place-list">
-        {places.slice(0, 24).map((place) => (
+        {places.slice(0, 50).map((place) => (
           <button
             className="place-row"
             type="button"
@@ -600,7 +481,7 @@ function CityGroup({ title, cities, onSelect }: CityGroupProps) {
         {title} <span>{cities.length}</span>
       </h3>
       <div className="place-list">
-        {cities.slice(0, 24).map((city) => (
+        {cities.slice(0, 50).map((city) => (
           <button
             className="place-row"
             type="button"
@@ -753,9 +634,18 @@ function DailyHistoryCalendarContent({
   }
 
   function selectCalendarDay(isoDate: string) {
-    setStartInput(formatIsoDateForInput(isoDate));
-    setEndInput("");
-    setVisibleMonth(getMonthStart(isoDate));
+    const formatted = formatIsoDateForInput(isoDate);
+    if (!startInput || endInput) {
+      // No start set yet, or range is complete — start fresh
+      updateStartInput(formatted);
+      setEndInput("");
+    } else if (!startIso || isoDate < startIso) {
+      // Clicked before current start — make it the new start
+      updateStartInput(formatted);
+    } else {
+      // Same or later than start — set as end
+      updateEndInput(formatted);
+    }
   }
 
   return (
@@ -908,6 +798,18 @@ function CalendarResults({
           <strong>{rangeResult.missingDays}</strong>
           <span>missing</span>
         </div>
+        <div>
+          <strong>{rangeResult.mapsOnlyDays}</strong>
+          <span>maps only</span>
+        </div>
+        <div>
+          <strong>{rangeResult.photosOnlyDays}</strong>
+          <span>photos only</span>
+        </div>
+        <div>
+          <strong>{rangeResult.bothDays}</strong>
+          <span>maps + photos</span>
+        </div>
       </div>
       {rangeResult.daysWithData === 0 ? (
         <p className="calendar-empty">No daily data was found for this selection.</p>
@@ -943,7 +845,7 @@ function CalendarResultGroup<T extends { key: string; name: string }>({
         {title} <span>{entries.length}</span>
       </h4>
       <div className="calendar-result-list">
-        {entries.slice(0, 24).map(({ item, dayCount }) => (
+        {entries.slice(0, 50).map(({ item, dayCount }) => (
           <div className="calendar-result-row" key={item.key}>
             <span>{item.name}</span>
             <strong>{dayCount} {dayCount === 1 ? "day" : "days"}</strong>
@@ -960,6 +862,7 @@ type CalendarDay = {
   isOutsideMonth: boolean;
   hasData: boolean;
   isSelected: boolean;
+  isInRange: boolean;
 };
 
 function buildCalendarDays(
@@ -973,12 +876,22 @@ function buildCalendarDays(
   return Array.from({ length: 42 }, (_, index) => {
     const date = addDays(gridStart, index);
     const isoDate = formatIsoDate(date);
+    const isSelected = Boolean(
+      selectedRange &&
+      (isoDate === selectedRange.startIso || isoDate === selectedRange.endIso)
+    );
+    const isInRange = Boolean(
+      selectedRange &&
+      selectedRange.startIso < isoDate &&
+      isoDate < selectedRange.endIso
+    );
     return {
       isoDate,
       dayNumber: date.getUTCDate(),
       isOutsideMonth: getMonthStart(isoDate) !== visibleMonth,
       hasData: queryDailyVisits(dailyVisits, isoDate) !== null,
-      isSelected: Boolean(selectedRange && selectedRange.startIso <= isoDate && isoDate <= selectedRange.endIso)
+      isSelected,
+      isInRange
     };
   });
 }
@@ -1019,7 +932,8 @@ function getCalendarDayClassName(day: CalendarDay): string {
     "calendar-day",
     day.hasData ? "has-data" : "missing-data",
     day.isOutsideMonth ? "outside-month" : "",
-    day.isSelected ? "selected" : ""
+    day.isSelected ? "selected" : "",
+    day.isInRange ? "in-range" : ""
   ].filter(Boolean).join(" ");
 }
 

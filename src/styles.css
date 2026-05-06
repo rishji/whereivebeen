@@ -405,6 +405,20 @@ h3 {
   grid-template-columns: auto minmax(0, 1fr);
 }
 
+.overview-stat {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-number {
+  white-space: nowrap;
+}
+
+.map-stat-row {
+  display: flex;
+}
+
 .overview-copy {
   display: flex;
   flex-direction: column;
@@ -631,6 +645,11 @@ h3 {
   color: #ffffff;
 }
 
+.calendar-day.in-range {
+  background: #bfdbfe;
+  border-color: #93c5fd;
+}
+
 .calendar-results {
   display: flex;
   flex-direction: column;
@@ -657,6 +676,7 @@ h3 {
   display: grid;
   gap: 0.5rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: auto auto;
 }
 
 .calendar-coverage div {
