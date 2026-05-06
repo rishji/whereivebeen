@@ -68,9 +68,9 @@ describe("place state model", () => {
 
   it("keeps status colors centralized", () => {
     expect(placeStatusColors).toEqual({
-      visited: "#2563eb",
-      lived: "#dc2626",
-      wantToVisit: "#16a34a"
+      visited: "#1f4d3a",
+      lived: "#c8431b",
+      wantToVisit: "#d68a14"
     });
   });
 

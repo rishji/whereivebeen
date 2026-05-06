@@ -11,9 +11,9 @@ export const placeStatusLabels: Record<PlaceStatus, string> = {
 };
 
 export const placeStatusColors: Record<PlaceStatus, string> = {
-  visited: "#2563eb",
-  lived: "#dc2626",
-  wantToVisit: "#16a34a"
+  visited: "#1f4d3a",
+  lived: "#c8431b",
+  wantToVisit: "#d68a14"
 };
 
 export const storageKey = "where-ive-been.place-statuses.v1";

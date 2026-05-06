@@ -12,22 +12,17 @@ export function AuthPanel({ session, loading }: AuthPanelProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState(
     isSupabaseConfigured
-      ? "Sign in to sync your map and history across devices."
-      : "Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to enable accounts."
+      ? "Sign in to sync your map across devices."
+      : "Set Supabase env vars to enable accounts."
   );
   const [isBusy, setIsBusy] = useState(false);
 
   async function handleSendLink() {
-    if (!email.trim()) {
-      setMessage("Enter an email address first.");
-      return;
-    }
-
+    if (!email.trim()) { setMessage("Enter an email address first."); return; }
     setIsBusy(true);
-
     try {
       await sendMagicLink(email.trim());
-      setMessage("Magic link sent. Check your email and return here.");
+      setMessage("Magic link sent — check your email.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not send magic link.");
     } finally {
@@ -37,7 +32,6 @@ export function AuthPanel({ session, loading }: AuthPanelProps) {
 
   async function handleSignOut() {
     setIsBusy(true);
-
     try {
       await signOut();
       setMessage("Signed out.");
@@ -48,37 +42,41 @@ export function AuthPanel({ session, loading }: AuthPanelProps) {
     }
   }
 
+  if (loading) {
+    return <span className="pill">Checking session…</span>;
+  }
+
+  if (session?.user) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="pill" title={message}>{session.user.email}</span>
+        <button className="btn btn-sm" type="button" onClick={() => void handleSignOut()} disabled={isBusy}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <section className="auth-card" aria-label="Account controls">
-      {loading ? (
-        <p>Checking account session...</p>
-      ) : session?.user ? (
-        <>
-          <div>
-            <p className="auth-label">Signed in</p>
-            <strong>{session.user.email}</strong>
-          </div>
-          <button type="button" className="secondary" onClick={() => void handleSignOut()} disabled={isBusy}>
-            Sign out
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="auth-form">
-            <input
-              type="email"
-              inputMode="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <button type="button" onClick={() => void handleSendLink()} disabled={isBusy || !isSupabaseConfigured}>
-              {isBusy ? "Sending..." : "Send magic link"}
-            </button>
-          </div>
-        </>
-      )}
-      <p className="auth-message">{message}</p>
-    </section>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <input
+        type="email"
+        inputMode="email"
+        placeholder="you@example.com"
+        value={email}
+        className="text-input"
+        style={{ width: 180 }}
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") void handleSendLink(); }}
+      />
+      <button
+        className="btn btn-sm btn-primary"
+        type="button"
+        onClick={() => void handleSendLink()}
+        disabled={isBusy || !isSupabaseConfigured}
+      >
+        {isBusy ? "Sending…" : "Sign in"}
+      </button>
+    </div>
   );
 }
