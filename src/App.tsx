@@ -55,9 +55,9 @@ function saveDerivedStatuses(statuses: PlaceStatuses): void {
 
 type Tab = "map" | "history" | "derivedMap" | "gallery";
 
-export function App() {
+export function App({ initialUserSlug }: { initialUserSlug?: string }) {
   const { session, loading: sessionLoading } = useSupabaseSession();
-  const [activePage, setActivePage] = useState<Tab>("map");
+  const [activePage, setActivePage] = useState<Tab>(initialUserSlug ? "gallery" : "map");
   const [statuses, setStatuses] = useState<PlaceStatuses>(() => loadPlaceStatuses());
   const [derivedStatuses, setDerivedStatuses] = useState<PlaceStatuses>(() => loadDerivedStatuses());
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
@@ -173,6 +173,21 @@ export function App() {
   function resetDerivedFromHistory() {
     const summary = loadHistorySummary();
     setDerivedStatuses(summary ? buildDerivedStatusesFromSummary(summary) : {});
+  }
+
+  function fillFromDerived() {
+    let count = 0;
+    setStatuses((prev) => {
+      const next = { ...prev };
+      for (const [key, status] of Object.entries(derivedStatuses)) {
+        if (!(key in next) || next[key] === "wantToVisit") {
+          next[key] = status;
+          count++;
+        }
+      }
+      return next;
+    });
+    setMessage(`Added ${count} places from derived atlas to editable atlas.`);
   }
 
   async function saveProfile(nextProfile: UserProfile) {
@@ -318,6 +333,9 @@ export function App() {
               <button className="btn btn-sm" type="button" onClick={resetDerivedFromHistory}>
                 ↻ Reset from history
               </button>
+              <button className="btn btn-sm" type="button" onClick={fillFromDerived}>
+                → Fill editable atlas
+              </button>
             </div>
           </div>
 
@@ -350,7 +368,7 @@ export function App() {
       {/* ── Gallery tab ── */}
       {activePage === "gallery" && (
         <div className="section-wrap">
-          <PublicGallery />
+          <PublicGallery initialUserSlug={initialUserSlug} />
         </div>
       )}
 

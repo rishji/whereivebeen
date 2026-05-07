@@ -990,6 +990,27 @@ button:disabled:hover {
   text-transform: uppercase;
 }
 
+.profile-share-btn {
+  margin-top: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  align-self: flex-start;
+}
+
+.profile-share-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
 .gallery-detail {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1311,6 +1332,50 @@ button:disabled:hover {
   margin: 0;
   font-family: var(--font-body);
   font-size: 14px;
+}
+
+/* ── Calendar day-by-day breakdown ── */
+.calendar-daily-breakdown {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.calendar-daily-breakdown h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin: 0 0 8px;
+}
+
+.calendar-day-row {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+}
+
+.calendar-day-row:last-child {
+  border-bottom: none;
+}
+
+.calendar-day-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.calendar-day-places {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.4;
 }
 
 /* ── History place rows ── */

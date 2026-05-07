@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { EditableMap } from "./EditableMap";
 import { HistoryExplorer } from "./HistoryExplorer";
+import { Legend } from "./Legend";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { loadPublicGalleryEntries, type PublicGalleryEntry } from "../lib/supabaseStore";
 
 const avatarColors = ["#c8431b", "#1f4d3a", "#0c4a6e", "#7c2d12", "#d68a14", "#1e3a5f"];
 
-export function PublicGallery() {
+function slugify(displayName: string): string {
+  return displayName.toLowerCase().replace(/\s+/g, "-");
+}
+
+export function PublicGallery({ initialUserSlug }: { initialUserSlug?: string }) {
   const [entries, setEntries] = useState<PublicGalleryEntry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<PublicGalleryEntry | null>(null);
+  const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
   const [message, setMessage] = useState(
     isSupabaseConfigured
       ? "Loading public gallery…"
@@ -23,7 +29,10 @@ export function PublicGallery() {
         const publicEntries = await loadPublicGalleryEntries();
         if (isCancelled) return;
         setEntries(publicEntries);
-        setSelectedEntry(publicEntries[0] ?? null);
+        const initial = initialUserSlug
+          ? (publicEntries.find((e) => slugify(e.displayName) === initialUserSlug) ?? publicEntries[0] ?? null)
+          : (publicEntries[0] ?? null);
+        setSelectedEntry(initial);
         setMessage(
           publicEntries.length
             ? `${publicEntries.length} public ${publicEntries.length === 1 ? "profile" : "profiles"}`
@@ -35,6 +44,14 @@ export function PublicGallery() {
     })();
     return () => { isCancelled = true; };
   }, []);
+
+  function copyShareLink(entry: PublicGalleryEntry) {
+    const url = `${window.location.origin}/whereivebeen/${slugify(entry.displayName)}`;
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopiedUserId(entry.userId);
+      setTimeout(() => setCopiedUserId(null), 2000);
+    });
+  }
 
   return (
     <div className="gallery-page">
@@ -74,6 +91,13 @@ export function PublicGallery() {
                   <div className="profile-updated">
                     Updated {new Date(entry.updatedAt).toLocaleDateString()}
                   </div>
+                  <button
+                    type="button"
+                    className="profile-share-btn"
+                    onClick={(e) => { e.stopPropagation(); copyShareLink(entry); }}
+                  >
+                    {copiedUserId === entry.userId ? "Copied!" : "Copy link"}
+                  </button>
                 </button>
               );
             })}
@@ -112,6 +136,7 @@ export function PublicGallery() {
               </div>
 
               <EditableMap statuses={selectedEntry.mapStatuses} onTogglePlace={() => undefined} readOnly />
+              <Legend />
 
               {selectedEntry.historySummary ? (
                 <HistoryExplorer

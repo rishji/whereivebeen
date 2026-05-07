@@ -13,7 +13,7 @@ import {
   loadRemoteHistorySummary,
   saveRemoteHistorySummary
 } from "../lib/supabaseStore";
-import { queryDailyVisitRange, queryDailyVisits } from "../lib/dailyVisitSummary";
+import { expandDateRange, queryDailyVisitRange, queryDailyVisits } from "../lib/dailyVisitSummary";
 import type { DailyVisitRangeResult } from "../lib/dailyVisitSummary";
 import {
   assistDateInput,
@@ -282,7 +282,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
           <div className="history-actions">
             <button
               type="button"
-              className="btn btn-primary btn-sm"
+              className={`btn btn-sm${!summary ? " btn-primary" : ""}`}
               onClick={() => mapsInputRef.current?.click()}
               disabled={isImporting}
             >
@@ -515,7 +515,7 @@ function PlaceGroup({ title, places, onSelect }: PlaceGroupProps) {
         {title} <span>{places.length}</span>
       </h3>
       <div className="place-list">
-        {places.slice(0, 50).map((place) => (
+        {places.slice(0, 200).map((place) => (
           <button
             className="place-row"
             type="button"
@@ -544,7 +544,7 @@ function CityGroup({ title, cities, onSelect }: CityGroupProps) {
         {title} <span>{cities.length}</span>
       </h3>
       <div className="place-list">
-        {cities.slice(0, 50).map((city) => (
+        {cities.slice(0, 200).map((city) => (
           <button
             className="place-row"
             type="button"
@@ -582,7 +582,7 @@ function AirportGroup({ title, airports, onSelect }: AirportGroupProps) {
         {title} <span>{airports.length}</span>
       </h3>
       <div className="place-list">
-        {airports.slice(0, 50).map((airport) => (
+        {airports.slice(0, 200).map((airport) => (
           <button
             className="place-row"
             type="button"
@@ -850,7 +850,7 @@ function DailyHistoryCalendarContent({
           </div>
         </div>
 
-        <CalendarResults summary={summary} rangeResult={rangeResult} />
+        <CalendarResults summary={summary} dailyVisits={dailyVisits} rangeResult={rangeResult} />
       </div>
     </section>
   );
@@ -858,9 +858,11 @@ function DailyHistoryCalendarContent({
 
 function CalendarResults({
   summary,
+  dailyVisits,
   rangeResult
 }: {
   summary: LocationHistoryPlaceSummary;
+  dailyVisits: NonNullable<LocationHistoryPlaceSummary["dailyVisits"]>;
   rangeResult: DailyVisitRangeResult | null;
 }) {
   const placeByKey = useMemo(
@@ -896,6 +898,9 @@ function CalendarResults({
   const title = rangeResult.startDate === rangeResult.endDate
     ? formatIsoDateForInput(rangeResult.startDate)
     : `${formatIsoDateForInput(rangeResult.startDate)} to ${formatIsoDateForInput(rangeResult.endDate)}`;
+
+  const isMultiDay = rangeResult.startDate !== rangeResult.endDate;
+  const datesInRange = isMultiDay ? expandDateRange(rangeResult.startDate, rangeResult.endDate) : [];
 
   return (
     <div className="calendar-results">
@@ -946,6 +951,31 @@ function CalendarResults({
         </div>
       ) : rangeResult.daysWithData > 0 ? (
         <p className="calendar-empty">Daily data exists for this selection, but no places or cities matched.</p>
+      ) : null}
+      {isMultiDay && rangeResult.daysWithData > 0 ? (
+        <div className="calendar-daily-breakdown">
+          <h4>Day by day</h4>
+          {datesInRange.map((date) => {
+            const dayVisit = queryDailyVisits(dailyVisits, date);
+            if (!dayVisit) return null;
+            const dayPlaces = dayVisit.placeKeys.flatMap((k) => {
+              const p = placeByKey.get(k);
+              return p ? [p.name] : [];
+            });
+            const dayCities = dayVisit.cityKeys.flatMap((k) => {
+              const c = cityByKey.get(k);
+              return c ? [c.name] : [];
+            });
+            const names = [...dayPlaces, ...dayCities];
+            if (names.length === 0) return null;
+            return (
+              <div className="calendar-day-row" key={date}>
+                <span className="calendar-day-date">{formatIsoDateForInput(date)}</span>
+                <span className="calendar-day-places">{names.join(" · ")}</span>
+              </div>
+            );
+          })}
+        </div>
       ) : null}
     </div>
   );

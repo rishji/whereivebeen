@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Where I've Been</title>
+  <script>
+    // GitHub Pages SPA redirect: encode the path as a query param so
+    // the React app can reconstruct it after loading index.html.
+    var base = '/whereivebeen/';
+    var path = window.location.pathname;
+    var slug = path.startsWith(base) ? path.slice(base.length).replace(/\/$/, '') : '';
+    var dest = base + (slug ? '?user=' + encodeURIComponent(slug) : '');
+    window.location.replace(dest);
+  </script>
+</head>
+<body></body>
+</html>
