@@ -1,5 +1,6 @@
 import type { PlaceScope } from "./placeState";
 import type { CityVisitSummary } from "./cityTypes";
+import type { AirportVisitSummary } from "./airportTypes";
 
 export type DateSpan = {
   startDate: string;
@@ -32,5 +33,6 @@ export type LocationHistoryPlaceSummary = {
   sourcePointCounts?: { maps: number; photos: number };
   places: VisitedPlaceSummary[];
   cities?: CityVisitSummary[];
+  airports?: AirportVisitSummary[];
   dailyVisits?: DailyVisitSummary[];
 };

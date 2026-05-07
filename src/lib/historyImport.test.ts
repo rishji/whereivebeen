@@ -86,6 +86,12 @@ describe("history import", () => {
         latitude: 0,
         longitude: 0,
         source: "timeline-path"
+      },
+      {
+        timestamp: "2020-01-03T10:00:00.000Z",
+        latitude: 37.621313,
+        longitude: -122.378955,
+        source: "visit"
       }
     ];
     const photosPoints: LocationPoint[] = [
@@ -105,7 +111,8 @@ describe("history import", () => {
 
     const summary = await mergeAndSummarize({ mapsPoints, photosPoints });
 
-    expect(summary.sourcePointCount).toBe(3);
+    expect(summary.sourcePointCount).toBe(4);
+    expect(summary.airports?.map((airport) => airport.iata)).toContain("SFO");
     expect(summary.dailyVisits).toEqual([
       {
         date: "2020-01-01",
@@ -118,6 +125,12 @@ describe("history import", () => {
         placeKeys: ["country:test-country"],
         cityKeys: ["city:test-city"],
         sourceCounts: { maps: 0, photos: 1 }
+      },
+      {
+        date: "2020-01-03",
+        placeKeys: [],
+        cityKeys: [],
+        sourceCounts: { maps: 1, photos: 0 }
       }
     ]);
   });

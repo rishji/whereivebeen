@@ -43,8 +43,13 @@ export async function mergeAndSummarize({
     ...photosPoints.filter((p) => !mapsDates.has(timestampToDate(p.timestamp)))
   ];
 
+  const [{ airportRecords }, { summarizeVisitedAirports }] = await Promise.all([
+    import("./airportData"),
+    import("./airportSummarizer")
+  ]);
   const places = summarizeVisitedPlaces(merged, assets.features);
   const cities = summarizeVisitedCities(merged, assets.cities);
+  const airports = summarizeVisitedAirports(merged, airportRecords);
   const sourceCountsByDate = buildSourceCountsByDate(mapsPoints, photosPoints, mapsDates);
   const dailyVisits = buildDailyVisits({
     places,
@@ -59,6 +64,7 @@ export async function mergeAndSummarize({
     sourcePointCounts: { maps: mapsPoints.length, photos: photosPoints.length },
     places,
     cities,
+    airports,
     dailyVisits
   };
 }

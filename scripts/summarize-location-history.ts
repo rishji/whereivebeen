@@ -5,6 +5,8 @@ import { toPlaceMapFeatures, type PlaceMapFeature } from "../src/lib/mapData";
 import { summarizeVisitedPlaces } from "../src/lib/historySummarizer";
 import { parseNaturalEarthCities } from "../src/lib/cityData";
 import { summarizeVisitedCities } from "../src/lib/citySummarizer";
+import { airportRecords } from "../src/lib/airportData";
+import { summarizeVisitedAirports } from "../src/lib/airportSummarizer";
 import type { LocationHistoryPlaceSummary } from "../src/lib/historySummaryTypes";
 import type { PrivateLocationHistoryExport } from "../src/lib/locationHistoryTypes";
 import type { PlaceScope } from "../src/lib/placeState";
@@ -17,12 +19,14 @@ async function main() {
   const [features, cities] = await Promise.all([loadPlaceFeatures(), loadMajorCities()]);
   const places = summarizeVisitedPlaces(privateExport.points, features);
   const citySummaries = summarizeVisitedCities(privateExport.points, cities);
+  const airportSummaries = summarizeVisitedAirports(privateExport.points, airportRecords);
   const summary: LocationHistoryPlaceSummary = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     sourcePointCount: privateExport.points.length,
     places,
-    cities: citySummaries
+    cities: citySummaries,
+    airports: airportSummaries
   };
 
   await mkdir(dirname(outputPath), { recursive: true });
@@ -37,7 +41,8 @@ async function main() {
         countries: summary.places.filter((place) => place.scope === "country").length,
         usStates: summary.places.filter((place) => place.scope === "us-state").length,
         indiaStates: summary.places.filter((place) => place.scope === "india-state").length,
-        cities: summary.cities?.length ?? 0
+        cities: summary.cities?.length ?? 0,
+        airports: summary.airports?.length ?? 0
       },
       null,
       2
