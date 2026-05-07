@@ -124,7 +124,7 @@ describe("HistoryExplorer daily calendar", () => {
 
     expect(screen.getByRole("heading", { name: /Airports 1/ })).toBeInTheDocument();
     expect(screen.getByText("SFO")).toBeInTheDocument();
-    expect(screen.getByText("San Francisco International Airport")).toBeInTheDocument();
+    expect(screen.getByText("San Francisco")).toBeInTheDocument();
     expect(screen.getByText("206 days")).toBeInTheDocument();
   });
 });
