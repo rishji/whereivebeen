@@ -26,7 +26,7 @@ import { loadHistorySummary } from "./lib/historyStorage";
 import type { LocationHistoryPlaceSummary } from "./lib/historySummaryTypes";
 import { computeMapStats } from "./lib/mapStats";
 
-const derivedStatusesKey = "where-ive-been.derived-place-statuses.v1";
+const derivedStatusesKey = "where-ive-been.derived-place-statuses.v2";
 
 function loadDerivedStatuses(): PlaceStatuses {
   const stored = window.localStorage.getItem(derivedStatusesKey);
