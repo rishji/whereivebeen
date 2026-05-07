@@ -261,43 +261,51 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
 
   return (
     <section className="history-page">
-      <div className="tab-header">
+      <div className="history-header">
         <div>
-          <p className="eyebrow">Location history</p>
-          <h2>{readOnly ? "Published History" : "History Explorer"}</h2>
-          <p className="lede">
+          <p className="section-eyebrow">§ 02 — {readOnly ? "Published History" : "History Explorer"}</p>
+          <h2 className="section-title">
+            {readOnly ? (
+              <>Places,<br /><em>explored.</em></>
+            ) : (
+              <>Your timeline,<br /><em>mapped.</em></>
+            )}
+          </h2>
+          <p className="section-lede">
             {readOnly
               ? "This read-only summary was published to the public gallery by its owner."
-              : "Import your Google Maps Timeline to generate a private summary of countries, states, and cities visited. Optionally add Google Photos to fill in gaps."}
+              : "Import your Google Maps Timeline to generate a private summary of countries, states, and cities visited."}
           </p>
         </div>
         {readOnly ? null : (
-          <div className="actions">
+          <div className="history-actions">
             <button
               type="button"
+              className="btn btn-primary btn-sm"
               onClick={() => mapsInputRef.current?.click()}
               disabled={isImporting}
             >
-              {isImportingMaps ? "Importing..." : "Import Maps Timeline"}
+              {isImportingMaps ? "Importing…" : "Import Maps Timeline"}
             </button>
             <button
               type="button"
+              className="btn btn-sm"
               onClick={() => photoPointsInputRef.current?.click()}
               disabled={isImporting}
             >
-              {isImportingPhotos ? "Importing..." : "Import photo-locations.json"}
+              {isImportingPhotos ? "Importing…" : "Import photo-locations.json"}
             </button>
             <button
               type="button"
-              className="secondary"
+              className="btn btn-sm secondary"
               onClick={() => void resetHistory()}
               disabled={isImporting}
             >
-              Clear Stored
+              Clear
             </button>
             <button
               type="button"
-              className="secondary"
+              className="btn btn-sm secondary"
               onClick={() => instructionsRef.current?.scrollIntoView({ behavior: "smooth" })}
             >
               Instructions
@@ -382,8 +390,30 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
           <DailyHistoryCalendar summary={summary} readOnly={readOnly} />
         </>
       ) : (
-        <div className="empty-state">
-          <p>{message}</p>
+        <div className="history-empty-state">
+          <div className="history-empty-art">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <circle cx="40" cy="40" r="39" stroke="var(--line)" strokeWidth="1.5" />
+              <circle cx="40" cy="40" r="28" stroke="var(--line)" strokeWidth="1" strokeDasharray="3 4" />
+              <circle cx="40" cy="40" r="3" fill="var(--accent)" />
+              <line x1="40" y1="1" x2="40" y2="14" stroke="var(--line)" strokeWidth="1" />
+              <line x1="40" y1="66" x2="40" y2="79" stroke="var(--line)" strokeWidth="1" />
+              <line x1="1" y1="40" x2="14" y2="40" stroke="var(--line)" strokeWidth="1" />
+              <line x1="66" y1="40" x2="79" y2="40" stroke="var(--line)" strokeWidth="1" />
+            </svg>
+          </div>
+          <p className="history-empty-title">Your timeline is waiting.</p>
+          <p className="history-empty-lede">{message}</p>
+          {!readOnly && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => mapsInputRef.current?.click()}
+              disabled={isImporting}
+            >
+              {isImportingMaps ? "Importing…" : "Import Maps Timeline"}
+            </button>
+          )}
         </div>
       )}
 

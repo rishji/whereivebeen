@@ -16,7 +16,7 @@ type VisibilityPanelProps = {
 export function VisibilityPanel({ session, profile, disabled, onSave }: VisibilityPanelProps) {
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [isPublic, setIsPublic] = useState(profile.isPublic);
-  const [message, setMessage] = useState("Private by default. Publish only when you are ready.");
+  const [message, setMessage] = useState("Private by default. Publish only when you're ready.");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -26,23 +26,16 @@ export function VisibilityPanel({ session, profile, disabled, onSave }: Visibili
 
   if (!session) {
     return (
-      <section className="visibility-card" aria-label="Public gallery controls">
-        <p className="auth-label">Public gallery</p>
-        <p className="auth-message">
-          You can upload and store data locally. Sign in to sync it or publish it.
-        </p>
-      </section>
+      <div className="visibility-card" aria-label="Public gallery controls">
+        <p className="card-label">Public gallery</p>
+        <p className="auth-message">Sign in to publish your map to the gallery.</p>
+      </div>
     );
   }
 
   async function handleSave() {
     setIsSaving(true);
-
-    const nextProfile = {
-      displayName: normalizeDisplayName(displayName),
-      isPublic
-    };
-
+    const nextProfile = { displayName: normalizeDisplayName(displayName), isPublic };
     try {
       await onSave(nextProfile);
       setDisplayName(nextProfile.displayName);
@@ -55,34 +48,35 @@ export function VisibilityPanel({ session, profile, disabled, onSave }: Visibili
   }
 
   return (
-    <section className="visibility-card" aria-label="Public gallery controls">
-      <div>
-        <p className="auth-label">Public gallery</p>
-        <label className="field-label">
-          Display name
-          <input
-            type="text"
-            maxLength={80}
-            value={displayName}
-            placeholder={defaultUserProfile.displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            disabled={disabled || isSaving}
-          />
-        </label>
-      </div>
+    <div className="visibility-card" aria-label="Public gallery controls">
+      <p className="card-label">Public gallery</p>
+      <label className="field-label">
+        Display name
+        <input
+          type="text"
+          maxLength={80}
+          value={displayName}
+          placeholder={defaultUserProfile.displayName}
+          className="text-input"
+          onChange={(e) => setDisplayName(e.target.value)}
+          disabled={disabled || isSaving}
+        />
+      </label>
       <label className="toggle-row">
         <input
           type="checkbox"
           checked={isPublic}
-          onChange={(event) => setIsPublic(event.target.checked)}
+          onChange={(e) => setIsPublic(e.target.checked)}
           disabled={disabled || isSaving}
         />
-        Show my data in the gallery
+        Show my data in the public gallery
       </label>
-      <button type="button" onClick={() => void handleSave()} disabled={disabled || isSaving}>
-        {isSaving ? "Saving..." : "Save visibility"}
-      </button>
-      <p className="auth-message">{message}</p>
-    </section>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <button className="btn btn-sm btn-primary" type="button" onClick={() => void handleSave()} disabled={disabled || isSaving}>
+          {isSaving ? "Saving…" : "Save"}
+        </button>
+        <p className="auth-message" style={{ margin: 0 }}>{message}</p>
+      </div>
+    </div>
   );
 }
