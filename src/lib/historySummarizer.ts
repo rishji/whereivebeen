@@ -33,6 +33,10 @@ export function summarizeVisitedPlaces(
   }));
 
   for (const point of points) {
+    if (!isPresencePoint(point)) {
+      continue;
+    }
+
     const date = timestampToDate(point.timestamp, point.latitude, point.longitude);
 
     for (const { feature, bounds } of boundedFeatures) {
@@ -77,6 +81,10 @@ export function summarizeVisitedPlaces(
 
       return left.name.localeCompare(right.name);
     });
+}
+
+function isPresencePoint(point: LocationPoint): boolean {
+  return point.source !== "timeline-path";
 }
 
 export function compressDateSpans(sortedDates: string[]): DateSpan[] {

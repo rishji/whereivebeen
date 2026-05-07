@@ -113,4 +113,40 @@ describe("history summarizer", () => {
       }
     ]);
   });
+
+  it("ignores timeline path points when summarizing visited places", () => {
+    const points: LocationPoint[] = [
+      {
+        timestamp: "2020-01-01T10:00:00.000Z",
+        latitude: 5,
+        longitude: 5,
+        source: "timeline-path"
+      },
+      {
+        timestamp: "2020-01-03T10:00:00.000Z",
+        latitude: 5,
+        longitude: 5,
+        source: "visit"
+      }
+    ];
+
+    expect(summarizeVisitedPlaces(points, [squareFeature])).toEqual([
+      {
+        key: "country:square",
+        scope: "country",
+        id: "square",
+        name: "Squareland",
+        dayCount: 1,
+        firstDate: "2020-01-03",
+        lastDate: "2020-01-03",
+        dateSpans: [
+          {
+            startDate: "2020-01-03",
+            endDate: "2020-01-03",
+            dayCount: 1
+          }
+        ]
+      }
+    ]);
+  });
 });

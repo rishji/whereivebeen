@@ -3,6 +3,35 @@ import type { CityRecord, CityVisitSummary } from "./cityTypes";
 import type { LocationPoint } from "./locationHistoryTypes";
 
 export const defaultCityMatchRadiusKm = 50;
+const airportOverrideRadiusKm = 3;
+
+type AirportCityOverride = {
+  latitude: number;
+  longitude: number;
+  cityName: string;
+  countryCode: string;
+};
+
+const airportCityOverrides: AirportCityOverride[] = [
+  {
+    latitude: 37.621313,
+    longitude: -122.378955,
+    cityName: "San Francisco",
+    countryCode: "US"
+  },
+  {
+    latitude: 19.4363,
+    longitude: -99.0721,
+    cityName: "Mexico City",
+    countryCode: "MX"
+  },
+  {
+    latitude: 40.6895,
+    longitude: -74.1745,
+    cityName: "New York",
+    countryCode: "US"
+  }
+];
 
 type CityAccumulator = {
   city: CityRecord;
@@ -23,6 +52,10 @@ export function summarizeVisitedCities(
   const accumulators = new Map<string, CityAccumulator>();
 
   for (const point of points) {
+    if (!isPresencePoint(point)) {
+      continue;
+    }
+
     const city = findNearestCity(point, cities, matchRadiusKm);
 
     if (!city) {
@@ -76,6 +109,11 @@ function findNearestCity(
   cities: CityRecord[],
   matchRadiusKm: number
 ): CityRecord | null {
+  const overrideCity = findAirportOverrideCity(point, cities);
+  if (overrideCity) {
+    return overrideCity;
+  }
+
   let nearestCity: CityRecord | null = null;
   let nearestDistanceKm = matchRadiusKm;
 
@@ -98,6 +136,29 @@ function findNearestCity(
   }
 
   return nearestCity;
+}
+
+function isPresencePoint(point: LocationPoint): boolean {
+  return point.source !== "timeline-path";
+}
+
+function findAirportOverrideCity(point: LocationPoint, cities: CityRecord[]): CityRecord | null {
+  for (const override of airportCityOverrides) {
+    const distanceKm = distanceBetweenCoordinatesKm(
+      point.latitude,
+      point.longitude,
+      override.latitude,
+      override.longitude
+    );
+
+    if (distanceKm > airportOverrideRadiusKm) {
+      continue;
+    }
+
+    return cities.find((city) => city.name === override.cityName && city.countryCode === override.countryCode) ?? null;
+  }
+
+  return null;
 }
 
 function isPointInCandidateBounds(point: LocationPoint, city: CityRecord, matchRadiusKm: number): boolean {
