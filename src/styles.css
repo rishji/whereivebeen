@@ -1840,6 +1840,20 @@ button.secondary:hover { background: var(--bg-subtle); }
 .gallery-history-grid .history-list-intro,
 .gallery-history-grid .place-details { grid-column: 1 / -1; }
 
+@media (max-width: 900px) {
+  .owner-history-grid,
+  .gallery-history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-history-grid .history-list-intro,
+  .owner-history-grid .place-details,
+  .gallery-history-grid .history-list-intro,
+  .gallery-history-grid .place-details {
+    grid-column: 1 / -1;
+  }
+}
+
 /* HistoryExplorer calendar day state modifiers */
 .calendar-day.has-data {
   background: rgba(31, 77, 58, 0.14);
