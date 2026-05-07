@@ -44,6 +44,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
   const [selectedPlace, setSelectedPlace] = useState<VisitedPlaceSummary | null>(null);
   const [selectedCity, setSelectedCity] = useState<CityVisitSummary | null>(null);
   const [selectedAirport, setSelectedAirport] = useState<AirportVisitSummary | null>(null);
+  const [calendarDateRange, setCalendarDateRange] = useState<{ startDate: string; endDate: string; seq: number } | null>(null);
   const [message, setMessage] = useState(
     summary
       ? "Loaded your stored location-history summary from this browser."
@@ -351,6 +352,13 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
                   the browser to produce this country, state, and city summary.
                 </p>
               )}
+              {(() => {
+                const allDates = summary.places.flatMap((p) => [p.firstDate, p.lastDate]).filter(Boolean);
+                if (allDates.length === 0) return null;
+                const earliest = allDates.reduce((a, b) => (a < b ? a : b));
+                const latest = allDates.reduce((a, b) => (a > b ? a : b));
+                return <p>Earliest record: <strong>{earliest}</strong> · Latest record: <strong>{latest}</strong></p>;
+              })()}
               <p>{storageCopy}</p>
             </div>
           </section>
@@ -384,10 +392,17 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
                 Lists show the top entries by days summarized.
               </p>
             </div>
-            <DetailsPanel place={selectedPlace} city={selectedCity} airport={selectedAirport} />
+            <DetailsPanel
+              place={selectedPlace}
+              city={selectedCity}
+              airport={selectedAirport}
+              onSelectDateRange={summary?.dailyVisits ? (startDate, endDate) => {
+                setCalendarDateRange((cur) => ({ startDate, endDate, seq: (cur?.seq ?? 0) + 1 }));
+              } : undefined}
+            />
           </div>
 
-          <DailyHistoryCalendar summary={summary} readOnly={readOnly} />
+          <DailyHistoryCalendar summary={summary} readOnly={readOnly} externalRange={calendarDateRange} />
         </>
       ) : (
         <div className="history-empty-state">
@@ -551,6 +566,15 @@ type AirportGroupProps = {
   onSelect: (airport: AirportVisitSummary) => void;
 };
 
+function formatAirportName(name: string): string {
+  return name
+    .replace(/\bInternational Airport\b/gi, "")
+    .replace(/\bInternational\b/gi, "")
+    .replace(/\bAirport\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function AirportGroup({ title, airports, onSelect }: AirportGroupProps) {
   return (
     <section className="place-group">
@@ -566,8 +590,7 @@ function AirportGroup({ title, airports, onSelect }: AirportGroupProps) {
             onClick={() => onSelect(airport)}
           >
             <span>
-              <strong>{airport.iata}</strong>
-              <span>{airport.name}</span>
+              <strong>{airport.iata}</strong>{" "}{formatAirportName(airport.name)}
             </span>
             <strong>{airport.dayCount} days</strong>
           </button>
@@ -580,11 +603,13 @@ function AirportGroup({ title, airports, onSelect }: AirportGroupProps) {
 function DetailsPanel({
   place,
   city,
-  airport
+  airport,
+  onSelectDateRange
 }: {
   place: VisitedPlaceSummary | null;
   city: CityVisitSummary | null;
   airport: AirportVisitSummary | null;
+  onSelectDateRange?: (startDate: string, endDate: string) => void;
 }) {
   const item = airport ?? city ?? place;
 
@@ -602,28 +627,32 @@ function DetailsPanel({
 
   return (
     <section className="place-details">
-      <h3>{airport ? `${airport.iata} · ${airport.name}` : item.name}</h3>
+      <h3>{airport ? `${airport.iata} · ${formatAirportName(airport.name)}` : item.name}</h3>
       <p>
         This selection includes {item.dayCount} unique days from {item.firstDate} to {item.lastDate}.
         {city ? ` Population ${city.population.toLocaleString()}.` : ""}
         {airport ? ` ${airport.municipality}, ${airport.countryCode}. ${airport.visitPointCount.toLocaleString()} visit points matched.` : ""}
       </p>
       <p>
-        Date spans are grouped consecutive visit days, sorted newest first. Select another row in
-        the lists to replace this detail view.
+        Date spans are grouped consecutive visit days, sorted newest first.{onSelectDateRange ? " Click a span to jump to that date range in the calendar." : " Select another row in the lists to replace this detail view."}
       </p>
       <div className="span-list">
         {[...item.dateSpans]
           .sort((left, right) => right.startDate.localeCompare(left.startDate))
           .slice(0, 80)
           .map((span) => (
-            <div className="span-row" key={`${item.key}-${span.startDate}-${span.endDate}`}>
+            <button
+              className="span-row"
+              type="button"
+              key={`${item.key}-${span.startDate}-${span.endDate}`}
+              onClick={() => onSelectDateRange?.(span.startDate, span.endDate)}
+            >
               <span>
                 {span.startDate}
                 {span.endDate !== span.startDate ? ` → ${span.endDate}` : ""}
               </span>
               <strong>{span.dayCount} days</strong>
-            </div>
+            </button>
           ))}
       </div>
     </section>
@@ -632,10 +661,12 @@ function DetailsPanel({
 
 function DailyHistoryCalendar({
   summary,
-  readOnly
+  readOnly,
+  externalRange
 }: {
   summary: LocationHistoryPlaceSummary;
   readOnly: boolean;
+  externalRange?: { startDate: string; endDate: string; seq: number } | null;
 }) {
   const dailyVisits = summary.dailyVisits;
 
@@ -655,15 +686,17 @@ function DailyHistoryCalendar({
     );
   }
 
-  return <DailyHistoryCalendarContent summary={summary} dailyVisits={dailyVisits} />;
+  return <DailyHistoryCalendarContent summary={summary} dailyVisits={dailyVisits} externalRange={externalRange} />;
 }
 
 function DailyHistoryCalendarContent({
   summary,
-  dailyVisits
+  dailyVisits,
+  externalRange
 }: {
   summary: LocationHistoryPlaceSummary;
   dailyVisits: NonNullable<LocationHistoryPlaceSummary["dailyVisits"]>;
+  externalRange?: { startDate: string; endDate: string; seq: number } | null;
 }) {
   const sortedDates = useMemo(
     () => dailyVisits.map((dailyVisit) => dailyVisit.date).sort((left, right) => left.localeCompare(right)),
@@ -679,6 +712,13 @@ function DailyHistoryCalendarContent({
     setEndInput("");
     setVisibleMonth(getMonthStart(defaultDate || getTodayIsoDate()));
   }, [defaultDate]);
+
+  useEffect(() => {
+    if (!externalRange) return;
+    setStartInput(formatIsoDateForInput(externalRange.startDate));
+    setEndInput(externalRange.startDate === externalRange.endDate ? "" : formatIsoDateForInput(externalRange.endDate));
+    setVisibleMonth(getMonthStart(externalRange.startDate));
+  }, [externalRange?.seq]);
 
   const parsedStart = startInput ? parseDateInput(startInput) : null;
   const parsedEnd = endInput ? parseDateInput(endInput) : null;
@@ -862,9 +902,9 @@ function CalendarResults({
       <div className="calendar-results-header">
         <h3>{title}</h3>
         <span>
-          {rangeResult.sourceCounts.maps.toLocaleString()} Maps
+          {rangeResult.sourceCounts.maps.toLocaleString()} maps data points
           {rangeResult.sourceCounts.photos > 0
-            ? ` / ${rangeResult.sourceCounts.photos.toLocaleString()} Photos`
+            ? ` / ${rangeResult.sourceCounts.photos.toLocaleString()} photos data points`
             : ""}
         </span>
       </div>

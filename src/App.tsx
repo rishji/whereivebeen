@@ -39,9 +39,12 @@ function loadDerivedStatuses(): PlaceStatuses {
 
 function buildDerivedStatusesFromSummary(summary: LocationHistoryPlaceSummary): PlaceStatuses {
   const mapScopes = new Set(["country", "us-state", "india-state"]);
+  // Exclude country-level entries for USA (840) and India (356) so state fills
+  // render properly — country fills behind them would obscure state-level detail.
+  const excludedKeys = new Set(["country:840", "country:356"]);
   return Object.fromEntries(
     summary.places
-      .filter((p) => mapScopes.has(p.scope))
+      .filter((p) => mapScopes.has(p.scope) && !excludedKeys.has(p.key))
       .map((p) => [p.key, "visited" as const])
   );
 }
@@ -179,10 +182,10 @@ export function App() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "map", label: "Atlas" },
-    { id: "history", label: "History" },
-    { id: "derivedMap", label: "Derived" },
-    { id: "gallery", label: "Gallery" },
+    { id: "map", label: "Editable Atlas" },
+    { id: "history", label: "History Explorer" },
+    { id: "derivedMap", label: "Derived Atlas" },
+    { id: "gallery", label: "Public Gallery" },
   ];
 
   const derivedStats = computeMapStats(derivedStatuses);
@@ -291,6 +294,12 @@ export function App() {
       {activePage === "history" && (
         <div className="section-wrap">
           <HistoryExplorer session={session} />
+          <VisibilityPanel
+            session={session}
+            profile={profile}
+            disabled={sessionLoading || isProfileLoading}
+            onSave={saveProfile}
+          />
         </div>
       )}
 
@@ -313,7 +322,7 @@ export function App() {
           </div>
 
           <div className="stat-strip" style={{ padding: 0 }}>
-            <StatCard value={derivedStats.countries} label="Countries" accent="var(--accent)" />
+            <StatCard value={derivedStats.countries} label="Countries" sub={`${derivedStats.pctWorld}% of the world`} accent="var(--accent)" />
             <StatCard value={derivedStats.continents} label="Continents" sub="of 7 covered" />
             <StatCard value={`${derivedStats.usStates} · ${derivedStats.indiaStates}`} label="US · India States" />
             <StatCard value={derivedStats.totalMarked} label="Total marked" />
@@ -328,6 +337,13 @@ export function App() {
               </span>
             </div>
           </div>
+
+          <VisibilityPanel
+            session={session}
+            profile={profile}
+            disabled={sessionLoading || isProfileLoading}
+            onSave={saveProfile}
+          />
         </div>
       )}
 

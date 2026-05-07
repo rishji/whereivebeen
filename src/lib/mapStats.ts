@@ -38,8 +38,10 @@ export function computeMapStats(statuses: PlaceStatuses): MapStats {
       if (v === "wantToVisit") wantToVisit++;
     } else if (k.startsWith("us-state:")) {
       if (v === "visited" || v === "lived") usStates++;
+      if (v === "lived") lived++;
     } else if (k.startsWith("india-state:")) {
       if (v === "visited" || v === "lived") indiaStates++;
+      if (v === "lived") lived++;
     }
   }
 
