@@ -27,6 +27,7 @@ import type {
 } from "../lib/historySummaryTypes";
 import type { LocationPoint } from "../lib/locationHistoryTypes";
 import type { CityVisitSummary } from "../lib/cityTypes";
+import type { AirportVisitSummary } from "../lib/airportTypes";
 
 const maxCalendarRangeDays = 7305;
 
@@ -42,6 +43,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
   );
   const [selectedPlace, setSelectedPlace] = useState<VisitedPlaceSummary | null>(null);
   const [selectedCity, setSelectedCity] = useState<CityVisitSummary | null>(null);
+  const [selectedAirport, setSelectedAirport] = useState<AirportVisitSummary | null>(null);
   const [message, setMessage] = useState(
     summary
       ? "Loaded your stored location-history summary from this browser."
@@ -66,12 +68,13 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       countries: places.filter((place) => place.scope === "country"),
       usStates: places.filter((place) => place.scope === "us-state"),
       indiaStates: places.filter((place) => place.scope === "india-state"),
-      cities: summary?.cities ?? []
+      cities: summary?.cities ?? [],
+      airports: summary?.airports ?? []
     };
   }, [summary]);
 
   const summarizedPlaceCount = summary
-    ? summary.places.length + (summary.cities?.length ?? 0)
+    ? summary.places.length + (summary.cities?.length ?? 0) + (summary.airports?.length ?? 0)
     : 0;
 
   const storageCopy = readOnly
@@ -85,6 +88,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
       setSummary(initialSummary);
       setSelectedPlace(initialSummary?.places[0] ?? null);
       setSelectedCity(null);
+      setSelectedAirport(null);
     }
   }, [initialSummary, readOnly]);
 
@@ -115,6 +119,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
           saveHistorySummary(remoteSummary);
           setSelectedPlace(remoteSummary.places[0] ?? null);
           setSelectedCity(null);
+          setSelectedAirport(null);
           setMessage(`Loaded your saved history for ${session.user.email ?? "your account"}.`);
         } else if (summary) {
           await saveRemoteHistorySummary(session, summary);
@@ -161,6 +166,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
     setSummary(nextSummary);
     setSelectedPlace(nextSummary.places[0] ?? null);
     setSelectedCity(null);
+    setSelectedAirport(null);
     return nextSummary;
   }
 
@@ -239,6 +245,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
     setPhotosPoints([]);
     setSelectedPlace(null);
     setSelectedCity(null);
+    setSelectedAirport(null);
     setMessage("Cleared stored location-history summary from this browser.");
 
     if (session) {
@@ -350,16 +357,26 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
               onSelect={(city) => {
                 setSelectedCity(city);
                 setSelectedPlace(null);
+                setSelectedAirport(null);
+              }}
+            />
+            <AirportGroup
+              title="Airports"
+              airports={groupedPlaces.airports}
+              onSelect={(airport) => {
+                setSelectedAirport(airport);
+                setSelectedCity(null);
+                setSelectedPlace(null);
               }}
             />
             <div className="history-list-intro">
               <h3>Explore the summary</h3>
               <p>
-                Select any country, state, or city above to show its visit spans in the detail panel.
+                Select any country, state, city, or airport above to show its visit spans in the detail panel.
                 Lists show the top entries by days summarized.
               </p>
             </div>
-            <DetailsPanel place={selectedPlace} city={selectedCity} />
+            <DetailsPanel place={selectedPlace} city={selectedCity} airport={selectedAirport} />
           </div>
 
           <DailyHistoryCalendar summary={summary} readOnly={readOnly} />
@@ -436,6 +453,7 @@ export function HistoryExplorer({ initialSummary = null, session, readOnly = fal
   function selectPlace(place: VisitedPlaceSummary) {
     setSelectedPlace(place);
     setSelectedCity(null);
+    setSelectedAirport(null);
   }
 }
 
@@ -497,21 +515,55 @@ function CityGroup({ title, cities, onSelect }: CityGroupProps) {
   );
 }
 
+type AirportGroupProps = {
+  title: string;
+  airports: AirportVisitSummary[];
+  onSelect: (airport: AirportVisitSummary) => void;
+};
+
+function AirportGroup({ title, airports, onSelect }: AirportGroupProps) {
+  return (
+    <section className="place-group">
+      <h3>
+        {title} <span>{airports.length}</span>
+      </h3>
+      <div className="place-list">
+        {airports.slice(0, 50).map((airport) => (
+          <button
+            className="place-row"
+            type="button"
+            key={airport.key}
+            onClick={() => onSelect(airport)}
+          >
+            <span>
+              <strong>{airport.iata}</strong>
+              <span>{airport.name}</span>
+            </span>
+            <strong>{airport.dayCount} days</strong>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DetailsPanel({
   place,
-  city
+  city,
+  airport
 }: {
   place: VisitedPlaceSummary | null;
   city: CityVisitSummary | null;
+  airport: AirportVisitSummary | null;
 }) {
-  const item = city ?? place;
+  const item = airport ?? city ?? place;
 
   if (!item) {
     return (
       <section className="place-details">
         <h3>Select a place</h3>
         <p>
-          Choose a country, state, or city from the summary lists. The selected item will show
+          Choose a country, state, city, or airport from the summary lists. The selected item will show
           unique days visited and the date spans that contributed to the total.
         </p>
       </section>
@@ -520,10 +572,11 @@ function DetailsPanel({
 
   return (
     <section className="place-details">
-      <h3>{item.name}</h3>
+      <h3>{airport ? `${airport.iata} · ${airport.name}` : item.name}</h3>
       <p>
         This selection includes {item.dayCount} unique days from {item.firstDate} to {item.lastDate}.
         {city ? ` Population ${city.population.toLocaleString()}.` : ""}
+        {airport ? ` ${airport.municipality}, ${airport.countryCode}. ${airport.visitPointCount.toLocaleString()} visit points matched.` : ""}
       </p>
       <p>
         Date spans are grouped consecutive visit days, sorted newest first. Select another row in

@@ -96,6 +96,37 @@ describe("HistoryExplorer daily calendar", () => {
       })
     ).toBeInTheDocument();
   });
+
+  it("renders airport summaries", () => {
+    render(
+      <HistoryExplorer
+        initialSummary={createSummary({
+          airports: [
+            {
+              key: "airport:SFO",
+              iata: "SFO",
+              name: "San Francisco International Airport",
+              municipality: "San Francisco",
+              countryCode: "US",
+              dayCount: 206,
+              pointCount: 639,
+              visitPointCount: 255,
+              firstDate: "2013-01-01",
+              lastDate: "2026-01-01",
+              dateSpans: [{ startDate: "2026-01-01", endDate: "2026-01-01", dayCount: 1 }]
+            }
+          ],
+          dailyVisits: []
+        })}
+        session={null}
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: /Airports 1/ })).toBeInTheDocument();
+    expect(screen.getByText("SFO")).toBeInTheDocument();
+    expect(screen.getByText("San Francisco International Airport")).toBeInTheDocument();
+    expect(screen.getByText("206 days")).toBeInTheDocument();
+  });
 });
 
 function createStorage(): Storage {
