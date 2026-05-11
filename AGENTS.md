@@ -2,6 +2,10 @@
 
 Codebase documentation for AI agents working in the `where-ive-been` repository.
 
+## Agent Workflow
+
+Follow the workspace policy in `/Users/rishi/Projects/AGENTS.md` — it includes session workflow trigger phrases and the pointer to the vault for session entry format.
+
 ## Commands
 
 ```sh
