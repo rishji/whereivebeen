@@ -171,19 +171,33 @@ describe("location history parser", () => {
       })
     ).toHaveLength(0);
 
-    // Legitimate car trip (~90 km/h) — should be kept
+    // Legitimate highway drive ~160 km at 140 km/h — should be kept
     expect(
       parseLocationHistoryEntry({
         startTime: "2020-01-01T10:00:00.000Z",
-        endTime: "2020-01-01T16:00:00.000Z",
+        endTime: "2020-01-01T11:08:00.000Z",
         activity: {
-          start: "geo:37.774900,-122.419400",
-          end: "geo:34.052200,-118.243700",
-          distanceMeters: 560000,
+          start: "geo:46.533594,15.600487",
+          end: "geo:45.562684,17.104551",
+          distanceMeters: 160000,
           topCandidate: { type: "IN_PASSENGER_VEHICLE" }
         }
       })
     ).toHaveLength(2);
+
+    // Slow misclassified flight sub-segment: 121 km/h but 215 km straight-line — should be filtered
+    expect(
+      parseLocationHistoryEntry({
+        startTime: "2019-05-29T14:24:55.000Z",
+        endTime: "2019-05-29T16:11:36.000Z",
+        activity: {
+          start: { latLng: "2.4295093°, 31.8487915°" },
+          end: { latLng: "4.249797°, 31.1868677°" },
+          distanceMeters: 215330,
+          topCandidate: { type: "IN_PASSENGER_VEHICLE" }
+        }
+      })
+    ).toHaveLength(0);
   });
 
   it("parses a top-level array and summarizes extracted points", () => {

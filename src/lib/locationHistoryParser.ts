@@ -96,8 +96,6 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
   return points.sort((left, right) => left.timestamp.localeCompare(right.timestamp));
 }
 
-const flightSpeedThresholdKmh = 500;
-
 function isFlightActivity(entry: LocationHistoryEntry): boolean {
   const act = entry.activity;
   if (!act) return false;
@@ -105,14 +103,39 @@ function isFlightActivity(entry: LocationHistoryEntry): boolean {
   const type = act.topCandidate?.type?.toLowerCase() ?? "";
   if (type.includes("fly")) return true;
 
-  // Catch misclassified flights (e.g. RUNNING or IN_PASSENGER_VEHICLE at air speed)
   const distanceMeters = Number(act.distanceMeters ?? 0);
   if (!distanceMeters || !entry.startTime || !entry.endTime) return false;
 
   const durationSeconds = (new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime()) / 1000;
   if (durationSeconds <= 0) return false;
 
-  return (distanceMeters / durationSeconds) * 3.6 > flightSpeedThresholdKmh;
+  const speedKmh = (distanceMeters / durationSeconds) * 3.6;
+
+  // Unambiguous air speed
+  if (speedKmh > 200) return true;
+
+  // Slower misclassified sub-segment: still clearly not ground transport if it spans
+  // a very long straight-line distance (e.g. 121 km/h over 215 km in South Sudan)
+  if (speedKmh > 100) {
+    const start = act.start ? parseGeoPoint(act.start) : null;
+    const end = act.end ? parseGeoPoint(act.end) : null;
+    if (start && end) {
+      const geoDistanceKm = haversineKm(start.latitude, start.longitude, end.latitude, end.longitude);
+      if (geoDistanceKm > 200) return true;
+    }
+  }
+
+  return false;
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export function parseGeoPoint(value: GeoPointValue): { latitude: number; longitude: number } | null {
