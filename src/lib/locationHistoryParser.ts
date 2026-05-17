@@ -1,13 +1,27 @@
-import type { LocationHistoryEntry, LocationPoint } from "./locationHistoryTypes";
+import type { GeoPointValue, LocationHistoryEntry, LocationPoint } from "./locationHistoryTypes";
 
-const geoPointPattern = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/;
+// iPhone format: "geo:lat,lng"
+const geoUriPattern = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/;
+// Android format: "lat°, lng°"
+const degreePattern = /^(-?\d+(?:\.\d+)?)°,\s*(-?\d+(?:\.\d+)?)°$/;
 
 export function parseGoogleLocationHistory(input: unknown): LocationPoint[] {
-  if (!Array.isArray(input)) {
+  let entries: unknown[];
+  if (Array.isArray(input)) {
+    entries = input;
+  } else if (
+    input !== null &&
+    typeof input === "object" &&
+    "semanticSegments" in input &&
+    Array.isArray((input as Record<string, unknown>).semanticSegments)
+  ) {
+    // Android export: top-level object with semanticSegments array
+    entries = (input as Record<string, unknown>).semanticSegments as unknown[];
+  } else {
     throw new Error("Expected Google Location History export to be a top-level array");
   }
 
-  return input.flatMap((entry) => parseLocationHistoryEntry(entry as LocationHistoryEntry));
+  return entries.flatMap((entry) => parseLocationHistoryEntry(entry as LocationHistoryEntry));
 }
 
 export function parseLocationHistoryEntry(entry: LocationHistoryEntry): LocationPoint[] {
@@ -21,7 +35,7 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
         latitude: point.latitude,
         longitude: point.longitude,
         source: "visit",
-        placeId: entry.visit.topCandidate.placeID
+        placeId: entry.visit.topCandidate.placeID ?? entry.visit.topCandidate.placeId
       });
     }
   }
@@ -61,8 +75,17 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
         continue;
       }
 
+      let timestamp: string;
+      if (pathPoint.time) {
+        // Android: absolute timestamp per path point
+        timestamp = pathPoint.time;
+      } else {
+        // iPhone: offset in minutes from segment start
+        timestamp = addMinutes(entry.startTime, Number(pathPoint.durationMinutesOffsetFromStartTime ?? 0));
+      }
+
       points.push({
-        timestamp: addMinutes(entry.startTime, Number(pathPoint.durationMinutesOffsetFromStartTime ?? 0)),
+        timestamp,
         latitude: point.latitude,
         longitude: point.longitude,
         source: "timeline-path"
@@ -73,8 +96,9 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
   return points.sort((left, right) => left.timestamp.localeCompare(right.timestamp));
 }
 
-export function parseGeoPoint(value: string): { latitude: number; longitude: number } | null {
-  const match = geoPointPattern.exec(value);
+export function parseGeoPoint(value: GeoPointValue): { latitude: number; longitude: number } | null {
+  const raw = typeof value === "string" ? value : value.latLng;
+  const match = geoUriPattern.exec(raw) ?? degreePattern.exec(raw);
   if (!match) {
     return null;
   }

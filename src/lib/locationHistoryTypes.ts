@@ -1,27 +1,32 @@
+// GeoPoint can be a plain "geo:lat,lng" string (iPhone) or {latLng: "lat°, lng°"} (Android)
+export type GeoPointValue = string | { latLng: string };
+
 export type LocationHistoryEntry = {
   startTime?: string;
   endTime?: string;
   visit?: {
     topCandidate?: {
-      placeID?: string;
-      placeLocation?: string;
-      probability?: string;
+      placeID?: string;  // iPhone export
+      placeId?: string;  // Android export
+      placeLocation?: GeoPointValue;
+      probability?: string | number;
       semanticType?: string;
     };
-    probability?: string;
+    probability?: string | number;
   };
   activity?: {
-    start?: string;
-    end?: string;
-    distanceMeters?: string;
+    start?: GeoPointValue;
+    end?: GeoPointValue;
+    distanceMeters?: string | number;
     topCandidate?: {
       type?: string;
-      probability?: string;
+      probability?: string | number;
     };
   };
   timelinePath?: Array<{
     point?: string;
-    durationMinutesOffsetFromStartTime?: string;
+    durationMinutesOffsetFromStartTime?: string;  // iPhone: offset from segment start
+    time?: string;                                  // Android: absolute timestamp
   }>;
 };
 
