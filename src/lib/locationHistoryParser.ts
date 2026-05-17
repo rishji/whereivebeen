@@ -40,7 +40,7 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
     }
   }
 
-  if (entry.activity?.start && entry.startTime) {
+  if (entry.activity?.start && entry.startTime && !isFlightActivity(entry)) {
     const point = parseGeoPoint(entry.activity.start);
     if (point) {
       points.push({
@@ -52,7 +52,7 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
     }
   }
 
-  if (entry.activity?.end && entry.endTime) {
+  if (entry.activity?.end && entry.endTime && !isFlightActivity(entry)) {
     const point = parseGeoPoint(entry.activity.end);
     if (point) {
       points.push({
@@ -94,6 +94,25 @@ export function parseLocationHistoryEntry(entry: LocationHistoryEntry): Location
   }
 
   return points.sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+}
+
+const flightSpeedThresholdKmh = 500;
+
+function isFlightActivity(entry: LocationHistoryEntry): boolean {
+  const act = entry.activity;
+  if (!act) return false;
+
+  const type = act.topCandidate?.type?.toLowerCase() ?? "";
+  if (type.includes("fly")) return true;
+
+  // Catch misclassified flights (e.g. RUNNING or IN_PASSENGER_VEHICLE at air speed)
+  const distanceMeters = Number(act.distanceMeters ?? 0);
+  if (!distanceMeters || !entry.startTime || !entry.endTime) return false;
+
+  const durationSeconds = (new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime()) / 1000;
+  if (durationSeconds <= 0) return false;
+
+  return (distanceMeters / durationSeconds) * 3.6 > flightSpeedThresholdKmh;
 }
 
 export function parseGeoPoint(value: GeoPointValue): { latitude: number; longitude: number } | null {

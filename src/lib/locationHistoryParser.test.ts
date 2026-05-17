@@ -143,6 +143,49 @@ describe("location history parser", () => {
     expect(points[3]).toMatchObject({ source: "timeline-path", timestamp: "2020-01-03T10:30:00.000-07:00" });
   });
 
+  it("excludes activity points from flight segments (type=flying or air speed)", () => {
+    // Explicitly typed FLYING segment - iPhone format
+    expect(
+      parseLocationHistoryEntry({
+        startTime: "2020-01-01T10:00:00.000Z",
+        endTime: "2020-01-01T14:00:00.000Z",
+        activity: {
+          start: "geo:40.498332,-3.567598",
+          end: "geo:22.308047,113.918480",
+          topCandidate: { type: "flying" }
+        }
+      })
+    ).toHaveLength(0);
+
+    // Misclassified flight: RUNNING segment spanning 2,990 km in 2 hours (~1,500 km/h)
+    expect(
+      parseLocationHistoryEntry({
+        startTime: "2019-05-29T17:11:40.000Z",
+        endTime: "2019-05-29T19:12:16.000Z",
+        activity: {
+          start: { latLng: "4.249797°, 31.1868677°" },
+          end: { latLng: "29.3427822°, 20.9782969°" },
+          distanceMeters: 2990285,
+          topCandidate: { type: "RUNNING" }
+        }
+      })
+    ).toHaveLength(0);
+
+    // Legitimate car trip (~90 km/h) — should be kept
+    expect(
+      parseLocationHistoryEntry({
+        startTime: "2020-01-01T10:00:00.000Z",
+        endTime: "2020-01-01T16:00:00.000Z",
+        activity: {
+          start: "geo:37.774900,-122.419400",
+          end: "geo:34.052200,-118.243700",
+          distanceMeters: 560000,
+          topCandidate: { type: "IN_PASSENGER_VEHICLE" }
+        }
+      })
+    ).toHaveLength(2);
+  });
+
   it("parses a top-level array and summarizes extracted points", () => {
     const points = parseGoogleLocationHistory([
       {
