@@ -10,7 +10,7 @@ const env = import.meta.env as ImportMetaEnv & SupabaseEnv;
 export const isSupabaseConfigured =
   Boolean(env.VITE_SUPABASE_URL?.trim()) && Boolean(env.VITE_SUPABASE_ANON_KEY?.trim());
 
-export const supabaseClient: SupabaseClient | null = isSupabaseConfigured
+export const supabaseClient: SupabaseClient<any, "wib"> | null = isSupabaseConfigured
   ? createClient(env.VITE_SUPABASE_URL!.trim(), env.VITE_SUPABASE_ANON_KEY!.trim(), {
       db: {
         schema: "wib"
