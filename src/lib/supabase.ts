@@ -12,6 +12,9 @@ export const isSupabaseConfigured =
 
 export const supabaseClient: SupabaseClient | null = isSupabaseConfigured
   ? createClient(env.VITE_SUPABASE_URL!.trim(), env.VITE_SUPABASE_ANON_KEY!.trim(), {
+      db: {
+        schema: "wib"
+      },
       auth: {
         autoRefreshToken: true,
         persistSession: true,
